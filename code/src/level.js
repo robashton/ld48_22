@@ -100,7 +100,6 @@ return function(name) {
     velocity[1] = 0;   
   };
 
-
   var solidAt = function(x,y) {
     var i = parseInt((x / chunkWidth));
     var j = parseInt((y / chunkHeight));
@@ -199,6 +198,7 @@ return function(name) {
   var loadStaticObjects = function() {
 
     var entity = new RenderEntity('first_door', 'img/door.png', 103, 12, 8.0, 15, 30);
+    entity.setSolidity(true);
     scene.addEntity(entity);
 
     entity = new RenderEntity('first_lever', 'img/lever_off.png', 40, 118, 8.0, 15, 15);

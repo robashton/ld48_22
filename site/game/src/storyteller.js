@@ -7,6 +7,7 @@ var RenderEntity = require('./renderentity');
 
 var PLAYER_AVATAR = "img/playeravatar.png";
 var RABBIT_AVATAR = "img/rabbitavatar.png";
+var SMASHY_AVATAR = "img/smashyavatar.png";
 
 return function() {
   Entity.call(this);
@@ -92,7 +93,7 @@ return function() {
   var pullLeverForFirstBox = function() {
     updateEntityState("second_lever", "open");
     addFirstBoxToScene();
-    whenPlayerReaches(rabbit, rabbitFollowPlayerToSmashyMan);
+    whenPlayerReaches(rabbit, rabbitAcknowledgeSmashyMan);
   };
 
   addFirstBoxToScene = function() {
@@ -101,9 +102,36 @@ return function() {
     scene.addEntity(box);
   };
 
-  rabbitFollowPlayerToSmashyMan = function() {
-    
+  rabbitAcknowledgeSmashyMan = function() {
+    showMessage("Look, another person - you say hello and I'll hop up there and find the way out", RABBIT_AVATAR);
+    moveEntityTo(rabbit, 405, 40, tryPullLeverForSecondBox);
+    whenPlayerReaches(smashyMan, startConversationWithSmashyMan);
   }; 
+
+  var startConversationWithSmashyMan = function() {
+    showMessage("Will.. will you be my friend too?", PLAYER_AVATAR);
+    showMessage("Rawr, ME SMASH THINGS AND BE FRIEND FOR YOU", SMASHY_AVATAR);
+    showMessage("Er... thanks I think?", PLAYER_AVATAR);
+    moveEntityTo(smashyMan, 425, 40, smashBrickWall);
+  };
+
+  var tryPullLeverForSecondBox = function() {
+    updateEntityState("third_lever", "open");
+    addSecondBoxToScene();
+  };
+  
+  var addSecondBoxToScene = function() {
+    var box = new RenderEntity('second_box', 'img/box.png', 352, 104, 8.0, 30, 30);
+    box.setSolidity(true);
+    scene.addEntity(box);
+  };
+
+  var smashBrickWall = function() {
+    console.log('Smashy smash');
+
+    moveEntityTo(rabbit, 690, 90, function(){});
+    moveEntityTo(smashyMan, 670, 90, function(){});
+  };
   
   var moveEntityTo = function(entity, x, y, callback) {
     entity.moveTo(x, y);
