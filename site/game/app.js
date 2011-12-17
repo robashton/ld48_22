@@ -1458,6 +1458,9 @@ return function(name) {
     entity = new RenderEntity('second_lever', 'img/lever_off.png', 252, 42, 8.0, 15, 15);
     scene.addEntity(entity);
 
+    entity = new RenderEntity('third_lever', 'img/lever_off.png', 405, 42, 8.0, 15, 15);
+    scene.addEntity(entity);
+
     self.raise('loaded');
   };
 
@@ -1600,30 +1603,38 @@ return function() {
 
 });
 
-define('src/rabbit',['require','../libs/layers/scene/entity','../libs/layers/render/material','./person'],function(require) {
+define('src/npc',['require','../libs/layers/scene/entity','../libs/layers/render/material','./person'],function(require) {
 
 var Entity = require('../libs/layers/scene/entity');
 var Material = require('../libs/layers/render/material');
 var Person = require('./person');
 
-return function(depth) {
-  Person.call(this, "rabbit", depth);
+return function(id, depth) {
+  Person.call(this, id, depth);
 
   var self = this
   ,   destx = 0
   ,   desty = 0
   ,   seeking = false
+  ,   lastBounds = null
   ;
-
-  self.setJumpHeight(-5.0);
-  self.setSolidity(false);
- 
   
   var oldTick = self.tick;
   self.tick = function() {
-    oldTick();
+
     if(seeking)
       moveTowardsTarget();
+
+    oldTick();
+
+    if(seeking) {
+      var newBounds = self.bounds();
+
+      if(Math.abs(lastBounds.x - newBounds.x) < 0.5)
+        self.moveUp();
+    
+      lastBounds = newBounds; 
+    }   
   };
 
   var moveTowardsTarget = function() {
@@ -1631,13 +1642,9 @@ return function(depth) {
 
     if(bounds.x > destx) {
       self.moveLeft();
-      if(pointIsInWall(bounds.x - 5.0, bounds.y + (bounds.height / 2.0)))
-        self.moveUp();
     }
     else {
       self.moveRight();  
-      if(pointIsInWall(bounds.x + bounds.width + 5.0, bounds.y + (bounds.height / 2.0)))
-        self.moveUp();
     }
     
     if(distanceFromTarget() < bounds.width) {
@@ -1646,15 +1653,11 @@ return function(depth) {
     }   
   };
 
-  var pointIsInWall = function(x, y) {
-   var level = scene.getEntity('current-level');
-   return level.isPointInWall(x, y);
-  };
-
   self.moveTo = function(x, y) {
     seeking = true;
     destx = x;
     desty = y;
+    lastBounds = self.bounds();
   };
 
   var distanceFromTarget = function() {
@@ -1665,23 +1668,49 @@ return function(depth) {
     return vec3.length(pTwo);
   };
 
-
   var onAddedToScene = function(data) {
     scene = data.scene;
     layer = scene.getLayer(depth);
   };
 
-
   self.on('addedToScene', onAddedToScene);
 };
 });
 
-define('src/storyteller',['require','./messagedisplay','../libs/layers/scene/entity','./rabbit','./renderentity'],function(require) {
+define('src/rabbit',['require','./npc'],function(require) {
+
+var Npc = require('./npc');
+
+return function(depth) {
+  Npc.call(this, "rabbit", depth);
+  var self = this;
+
+  self.setJumpHeight(-5.0);
+  self.setSolidity(true); 
+};
+});
+
+define('src/smashyman',['require','./npc'],function(require) {
+
+var Npc = require('./npc');
+
+return function(depth) {
+  Npc.call(this, "rabbit", depth);
+  var self = this;
+
+  self.setJumpHeight(-4.0);
+  self.setSolidity(true);
+};
+
+});
+
+define('src/storyteller',['require','./messagedisplay','../libs/layers/scene/entity','./rabbit','./renderentity','./smashyman'],function(require) {
 
 var MessageDisplay = require('./messagedisplay');
 var Entity = require('../libs/layers/scene/entity');
 var Rabbit = require('./rabbit');
 var RenderEntity = require('./renderentity');
+var SmashyMan = require('./smashyman');
 
 var PLAYER_AVATAR = "img/playeravatar.png";
 var RABBIT_AVATAR = "img/rabbitavatar.png";
@@ -1708,6 +1737,7 @@ return function() {
 
   var onWorldReady = function() {
     addMessageDisplay();
+    addSmashyManToScene();
     showMessage("I have been in this room since I can remember", PLAYER_AVATAR );
     showMessage("I am fed, I have somewhere to sleep and it is warm", PLAYER_AVATAR );
     showMessage("There is no exit, this is all I know", PLAYER_AVATAR );
@@ -1723,6 +1753,13 @@ return function() {
     rabbit.setPosition(90, 100);
     scene.addEntity(rabbit);
     setTimeout(tellPlayerHereToRescueHim, 500);
+  };
+
+  var smashyMan = null;
+  var addSmashyManToScene = function() {
+    smashyMan = new SmashyMan(8.0);
+    smashyMan.setPosition(310, 110);
+    scene.addEntity(smashyMan);
   };
 
   var tellPlayerHereToRescueHim = function() {
@@ -1790,6 +1827,10 @@ return function() {
     showMessage("Will.. will you be my friend too?", PLAYER_AVATAR);
     showMessage("Rawr, ME SMASH THINGS AND BE FRIEND FOR YOU", SMASHY_AVATAR);
     showMessage("Er... thanks I think?", PLAYER_AVATAR);
+    onMessagesFinished(moveSmashyManToBrickWall);
+  };
+
+  var moveSmashyManToBrickWall = function() {
     moveEntityTo(smashyMan, 425, 40, smashBrickWall);
   };
 
@@ -1975,7 +2016,6 @@ return function() {
       intersectResult.x = (two.x + two.width) - one.x;  // Return a positive valye indicating the desired change
       return intersectResult;     
     }
-
 
     // Clip bottom
     if(one.x + (one.width / 2.0) > two.x && 

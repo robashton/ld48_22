@@ -31,7 +31,9 @@ src/level.js
 src/controller.js
 src/layerscroller.js
 src/messagedisplay.js
+src/npc.js
 src/rabbit.js
+src/smashyman.js
 src/storyteller.js
 src/collision.js
 src/world.js

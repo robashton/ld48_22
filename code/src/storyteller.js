@@ -4,6 +4,7 @@ var MessageDisplay = require('./messagedisplay');
 var Entity = require('../libs/layers/scene/entity');
 var Rabbit = require('./rabbit');
 var RenderEntity = require('./renderentity');
+var SmashyMan = require('./smashyman');
 
 var PLAYER_AVATAR = "img/playeravatar.png";
 var RABBIT_AVATAR = "img/rabbitavatar.png";
@@ -30,6 +31,7 @@ return function() {
 
   var onWorldReady = function() {
     addMessageDisplay();
+    addSmashyManToScene();
     showMessage("I have been in this room since I can remember", PLAYER_AVATAR );
     showMessage("I am fed, I have somewhere to sleep and it is warm", PLAYER_AVATAR );
     showMessage("There is no exit, this is all I know", PLAYER_AVATAR );
@@ -45,6 +47,13 @@ return function() {
     rabbit.setPosition(90, 100);
     scene.addEntity(rabbit);
     setTimeout(tellPlayerHereToRescueHim, 500);
+  };
+
+  var smashyMan = null;
+  var addSmashyManToScene = function() {
+    smashyMan = new SmashyMan(8.0);
+    smashyMan.setPosition(310, 110);
+    scene.addEntity(smashyMan);
   };
 
   var tellPlayerHereToRescueHim = function() {
@@ -112,6 +121,10 @@ return function() {
     showMessage("Will.. will you be my friend too?", PLAYER_AVATAR);
     showMessage("Rawr, ME SMASH THINGS AND BE FRIEND FOR YOU", SMASHY_AVATAR);
     showMessage("Er... thanks I think?", PLAYER_AVATAR);
+    onMessagesFinished(moveSmashyManToBrickWall);
+  };
+
+  var moveSmashyManToBrickWall = function() {
     moveEntityTo(smashyMan, 425, 40, smashBrickWall);
   };
 

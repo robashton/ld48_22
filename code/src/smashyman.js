@@ -6,7 +6,8 @@ return function(depth) {
   Npc.call(this, "rabbit", depth);
   var self = this;
 
-  self.setJumpHeight(-5.0);
-  self.setSolidity(true); 
+  self.setJumpHeight(-4.0);
+  self.setSolidity(true);
 };
+
 });

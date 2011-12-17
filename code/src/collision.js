@@ -64,7 +64,6 @@ return function() {
       return intersectResult;     
     }
 
-
     // Clip bottom
     if(one.x + (one.width / 2.0) > two.x && 
        one.x + (one.width / 2.0) < two.x + two.width &&
