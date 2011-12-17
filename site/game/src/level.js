@@ -26,40 +26,35 @@ return function(path) {
   };
 
   self.clip = function(position, velocity, clipWidth, clipHeight) {
- //   clipDown(position, velocity, clipWidth, clipHeight);
+    clipDown(position, velocity, clipWidth, clipHeight);
   };
-/*
-  var clipDown = function(position, velocity, clipWidth, clipHeight) {
-    var levelCoords = convertToLevelCoords(position[0] + (clipWidth / 2.0), position[1] + clipHeight);
-    if(!solidAt(levelCoords.x, levelCoords.y + 1)) return;
 
-    while(solidAt(levelCoords.x, levelCoords.y)) {
-      levelCoords.y -= 1;
+  var clipDown = function(position, velocity, clipWidth, clipHeight) {
+    var pointToTest = {
+      x: parseInt(position[0] + (clipWidth / 2.0)),
+      y: parseInt(position[1] + clipHeight)
+    };
+
+    if(!solidAt(pointToTest.x, pointToTest.y + 1)) return;
+
+    while(solidAt(pointToTest.x, pointToTest.y)) {
+      pointToTest.y -= 1;
     }
   
-    var worldCoords = convertToWorldCoords(levelCoords.x, levelCoords.y);
-    position[1] = worldCoords.y - clipHeight;
+    position[1] = parseFloat(pointToTest.y) - clipHeight;
     velocity[1] = 0;   
   };
 
-  var convertToWorldCoords = function(x, y) {
-    return {
-      x: x / scalex,
-      y: y / scaley
-    };
-  };
-
-  var convertToLevelCoords = function(x, y) {
-    return {
-      x: parseInt(x * scalex),
-      y: parseInt(y * scaley)
-    };
-  };
 
   var solidAt = function(x,y) {
-    return mapData[x + y * levelWidth] > 0; 
+    var i = parseInt((x / chunkWidth));
+    var j = parseInt((y / chunkHeight));
+    x = (x % chunkWidth);
+    y = (y % chunkHeight);
+    
+    return mapData[i + j * numWidth][x + y * chunkWidth] > 0; 
   };
- */
+ 
 
   var onAddedToScene = function(data) {
     scene = data.scene;
@@ -117,6 +112,7 @@ return function(path) {
       for(var j = 0; j < numHeight; j++) {
 
         var texture = foregroundImages[i + j * numWidth].get();
+        memoryContext.clearRect(0,0, chunkWidth, chunkHeight);
         memoryContext.drawImage(texture, 0, 0);
 
         var chunkData = new Array(chunkWidth * chunkHeight);
