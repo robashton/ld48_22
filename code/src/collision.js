@@ -64,6 +64,17 @@ return function() {
       return intersectResult;     
     }
 
+
+    // Clip bottom
+    if(one.x + (one.width / 2.0) > two.x && 
+       one.x + (one.width / 2.0) < two.x + two.width &&
+       one.y + one.height > two.y &&
+       one.y + one.height < two.y + two.height) {
+
+      intersectResult.y =  two.y - (one.y + one.height); // Return a negative value indicating the desired change
+      return intersectResult;     
+    }
+
     // then top, then bottom (not relevant for the mo')
     return intersectResult;
   };

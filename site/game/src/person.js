@@ -18,6 +18,7 @@ return function(id, depth) {
   ,   height = 20
   ,   jumpHeight = -4.0
   ,   issolid = true
+  ,   physicsAdjust = vec3.create([0,0,0]);
   ;
 
   self.id = function() { return id; }
@@ -27,6 +28,7 @@ return function(id, depth) {
     applyFriction();
     applyVelocity();
     applyMapBounds();
+    applyPhysics();
     updateRenderable();
   };
 
@@ -68,8 +70,12 @@ return function(id, depth) {
   };  
 
   self.notifyCollide = function(x, y, otherEntity) {
-    if(x && otherEntity.issolid() && self.issolid()) {
-      position[0] += x;
+    if(otherEntity.issolid() && self.issolid()) {
+      if(x)
+        physicsAdjust[0] += x;
+      if(y) {
+        physicsAdjust[1] += y;
+      }
     }
   };
 
@@ -91,6 +97,8 @@ return function(id, depth) {
 
     if(Math.abs(velocity[0]) < 0.01)
       velocity[0] = 0;
+    if(Math.abs(velocity[1]) < 0.01)
+      velocity[1] = 0;
   };
 
   var applyVelocity = function() {
@@ -106,6 +114,19 @@ return function(id, depth) {
     scene.withEntity('current-level', function(level) {
       level.clip(position, velocity, width, height);
     });
+  };
+
+  var applyPhysics = function() {
+    if(physicsAdjust[0])
+      position[0] += physicsAdjust[0];
+    if(physicsAdjust[1]) {
+      position[1] += physicsAdjust[1];
+      if(physicsAdjust[1] < 0)
+        velocity[1] = 0;
+    }
+
+    physicsAdjust[0] = 0;
+    physicsAdjust[1] = 0;
   };
 
   var onAddedToScene = function(data) {
