@@ -1024,6 +1024,10 @@ return function(depth) {
 
   self.id = function() { return 'player'; }
 
+  self.tick = function() {
+    
+  };
+
   var onAddedToScene = function(data) {
     scene = data.scene;
     layer = scene.getLayer(depth);
@@ -1039,14 +1043,71 @@ return function(depth) {
   };
 
   self.on('addedToScene', onAddedToScene);
-
 };
 });
 
-define('src/world',['require','../libs/layers/scene/entity','./player'],function(require) {
+define('src/level',['require','../libs/layers/scene/entity','../libs/layers/render/material','../libs/layers/render/renderable'],function(require) {
+
+var Entity = require('../libs/layers/scene/entity');
+var Material = require('../libs/layers/render/material');
+var Renderable = require('../libs/layers/render/renderable');
+
+return function(foregroundPath, width, height) {
+  Entity.call(this);
+
+  var self = this
+  ,   scene = null
+  ,   foregroundLayer = null
+  ,   foregroundImage = null
+  ,   mapData = []
+  ,   renderable = null
+  ;
+
+  self.id = function() {
+    return "current-level";
+  };
+
+  var onAddedToScene = function(data) {
+    scene = data.scene;
+    foregroundLayer = scene.getLayer(8.0);
+    foregroundImage = scene.resources.get(foregroundPath);
+    foregroundImage.on('loaded', onLevelLoaded);
+    createRenderable();
+  };
+
+  var createRenderable = function() {
+    var material = new Material(255,255,255);
+    material.setImage(foregroundImage);
+    renderable = new Renderable(0,0, width, height, material);
+    foregroundLayer.addRenderable(renderable);
+  };
+
+  var onLevelLoaded = function() {
+    var texture = foregroundImage.get(); 
+    var memoryCanvas = document.createElement('canvas');
+    memoryCanvas.setAttribute('width', texture.width);  
+    memoryCanvas.setAttribute('height', texture.height); 
+    var memoryContext = memoryCanvas.getContext('2d');
+    memoryContext.drawImage(texture, 0, 0);
+    mapData = new Array(texture.width * texture.height);
+
+    for(var x = 0; x < texture.width; x++) {
+      for(var y = 0; y < texture.height; y++) {
+        var pixel = context.getImageData(x, y, 1, 1).data;
+        mapData[x + y * texture.width] = pixel.r;
+      }
+    }
+  };
+
+  self.on('addedToScene', onAddedToScene);
+};
+});
+
+define('src/world',['require','../libs/layers/scene/entity','./player','./level'],function(require) {
 
 var Entity = require('../libs/layers/scene/entity');
 var Player = require('./player');
+var Level = require('./level');
 
 return function() {
   Entity.call(this);
@@ -1060,12 +1121,16 @@ return function() {
   self.id = function() { return 'world'; }
 
   self.loadLevel = function(path) {
-    loadedLevel = {};
+    loadedLevel = new Level('img/test_level.png', 800, 600);
+    scene.addEntity(loadedLevel);
     addPlayer();
   };
 
   self.unloadLevel = function() {
-    if(loadedLevel) loadedLevel = {};
+    if(loadedLevel) {
+      scene.removeEntity(loadedLevel);
+      loadedLevel = null;
+    }
     removePlayer();    
   };
   

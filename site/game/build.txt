@@ -25,6 +25,7 @@ libs/layers/driver.js
 libs/layers/scene/entity.js
 libs/layers/render/renderable.js
 src/player.js
+src/level.js
 src/world.js
 src/game.js
 app.js

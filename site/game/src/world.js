@@ -2,6 +2,7 @@ define(function(require) {
 
 var Entity = require('../libs/layers/scene/entity');
 var Player = require('./player');
+var Level = require('./level');
 
 return function() {
   Entity.call(this);
@@ -15,12 +16,16 @@ return function() {
   self.id = function() { return 'world'; }
 
   self.loadLevel = function(path) {
-    loadedLevel = {};
+    loadedLevel = new Level('img/test_level.png', 800, 600);
+    scene.addEntity(loadedLevel);
     addPlayer();
   };
 
   self.unloadLevel = function() {
-    if(loadedLevel) loadedLevel = {};
+    if(loadedLevel) {
+      scene.removeEntity(loadedLevel);
+      loadedLevel = null;
+    }
     removePlayer();    
   };
   

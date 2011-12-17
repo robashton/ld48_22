@@ -14,6 +14,10 @@ return function(depth) {
 
   self.id = function() { return 'player'; }
 
+  self.tick = function() {
+    
+  };
+
   var onAddedToScene = function(data) {
     scene = data.scene;
     layer = scene.getLayer(depth);
@@ -29,6 +33,5 @@ return function(depth) {
   };
 
   self.on('addedToScene', onAddedToScene);
-
 };
 });
