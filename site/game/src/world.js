@@ -20,7 +20,7 @@ return function() {
   self.id = function() { return 'world'; }
 
   self.loadLevel = function(path) {
-    loadedLevel = new Level('img/main/');
+    loadedLevel = new Level('main');
     scene.addEntity(loadedLevel);
     addPlayer();
     addControls();
@@ -39,7 +39,7 @@ return function() {
   
   var addPlayer = function() {
     player = new Player(8.0);
-    player.setPosition(100, 100);
+    player.setPosition(20, 20);
     scene.addEntity(player);
   };
 

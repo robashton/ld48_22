@@ -16,6 +16,7 @@ return function(depth) {
   ,   gravity = 0.08
   ,   width = 20
   ,   height = 20
+  ,   jumpHeight = -4.0
   ;
 
   self.id = function() { return 'player'; }
@@ -49,7 +50,7 @@ return function(depth) {
 
   self.moveUp = function() {
     if(velocity[1] === 0)
-      velocity[1] = -2.0;
+      velocity[1] = jumpHeight;
   };
 
   var applyGravity = function() {

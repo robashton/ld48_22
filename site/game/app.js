@@ -1033,6 +1033,7 @@ return function(depth) {
   ,   gravity = 0.08
   ,   width = 20
   ,   height = 20
+  ,   jumpHeight = -4.0
   ;
 
   self.id = function() { return 'player'; }
@@ -1066,7 +1067,7 @@ return function(depth) {
 
   self.moveUp = function() {
     if(velocity[1] === 0)
-      velocity[1] = -2.0;
+      velocity[1] = jumpHeight;
   };
 
   var applyGravity = function() {
@@ -1117,7 +1118,7 @@ var Entity = require('../libs/layers/scene/entity');
 var Material = require('../libs/layers/render/material');
 var Renderable = require('../libs/layers/render/renderable');
 
-return function(path) {
+return function(name) {
   Entity.call(this);
 
   var self = this
@@ -1132,6 +1133,7 @@ return function(path) {
   ,   numHeight = 0
   ,   chunkWidth = 0 
   ,   chunkHeight = 0
+  ,   path = 'img/' + name + '/';
   ;
 
   self.id = function() {
@@ -1187,8 +1189,8 @@ return function(path) {
     while(solidAt(pointToTest.x, pointToTest.y)) {
       pointToTest.y += 1;
     }  
-    position[1] = parseFloat(pointToTest.y);
-    velocity[1] = 0;   
+    position[1] = parseFloat(pointToTest.y) + 1.0;
+    velocity[1] = Math.abs(velocity[1] * 0.2);  
   };
 
   var clipDown = function(position, velocity, clipWidth, clipHeight) {
@@ -1225,7 +1227,7 @@ return function(path) {
   };
 
   var loadData = function() {
-    $.get(path + 'imageSubdivide.xcf.rcm', function(data) {
+    $.get(path + name + '.png.rcm', function(data) {
       processData(data);
     });
   };
@@ -1258,7 +1260,7 @@ return function(path) {
   };
 
   var loadChunk = function(i, j, callback) {
-    var imgPath = path + 'imageSubdivide.xcf' + (i+1) + '-' + (j+1) + '.png';
+    var imgPath = path + name + '.png' + (i+1) + '-' + (j+1) + '.png';
     var image = scene.resources.get(imgPath);
     foregroundImages[j + i * numWidth] = image; 
     image.on('loaded', callback);   
@@ -1437,7 +1439,7 @@ return function() {
   self.id = function() { return 'world'; }
 
   self.loadLevel = function(path) {
-    loadedLevel = new Level('img/main/');
+    loadedLevel = new Level('main');
     scene.addEntity(loadedLevel);
     addPlayer();
     addControls();
@@ -1456,7 +1458,7 @@ return function() {
   
   var addPlayer = function() {
     player = new Player(8.0);
-    player.setPosition(100, 100);
+    player.setPosition(20, 20);
     scene.addEntity(player);
   };
 
