@@ -13,6 +13,8 @@ return function(depth) {
   ,   seeking = false
   ;
 
+  self.setJumpHeight(-5.0);
+  
   var oldTick = self.tick;
   self.tick = function() {
     oldTick();

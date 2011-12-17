@@ -1086,6 +1086,10 @@ return function(id, depth) {
     }
   };
 
+  self.setJumpHeight = function(height) {
+    jumpHeight = height;
+  };
+
   var applyGravity = function() {
     velocity[1] += gravity;
   };
@@ -1566,6 +1570,8 @@ return function(depth) {
   ,   seeking = false
   ;
 
+  self.setJumpHeight(-5.0);
+  
   var oldTick = self.tick;
   self.tick = function() {
     oldTick();

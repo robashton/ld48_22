@@ -68,6 +68,10 @@ return function(id, depth) {
     }
   };
 
+  self.setJumpHeight = function(height) {
+    jumpHeight = height;
+  };
+
   var applyGravity = function() {
     velocity[1] += gravity;
   };
