@@ -2,6 +2,7 @@ define(function(require) {
 
 var MessageDisplay = require('./messagedisplay');
 var Entity = require('../libs/layers/scene/entity');
+var Rabbit = require('./rabbit');
 
 return function() {
   Entity.call(this);
@@ -12,6 +13,7 @@ return function() {
   ,   messages = []
   ,   currentMessage = null
   ,   messageDisplay = null
+  ,   currentWaiter = null
   ;
 
   self.id = function() { return 'storyteller' };
@@ -21,8 +23,31 @@ return function() {
     showMessage("I have been in this room since I can remember");
     showMessage("I am fed, I have somewhere to sleep and it is warm");
     showMessage("There is no exit, this is all I know");
-    showMessage("I am");
-    showMessage("alone");
+    showMessage("I am... alone");
+    onMessagesFinished(addRabbitToScene);
+  };
+
+  var rabbit = null;
+  var addRabbitToScene = function() {
+    rabbit = new Rabbit(8.0);
+    rabbit.setPosition(90, 100);
+    scene.addEntity(rabbit);
+  };
+
+  
+
+
+
+
+
+
+
+
+
+
+
+  onMessagesFinished = function(callback) {
+    currentWaiter = callback;
   };
 
   var onAddedToScene = function(data) {
@@ -51,7 +76,15 @@ return function() {
 
   var onMessageClosed = function() {
     currentMessage = null;
-    tryShowNextMessage();
+    if(messages.length === 0) {
+      if(currentWaiter) {
+        var callback = currentWaiter;
+        currentWaiter = null;
+        callback();
+      }  
+    } else {
+      tryShowNextMessage();
+    }
   };
   
   self.on('addedToScene', onAddedToScene);

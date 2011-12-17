@@ -24,11 +24,13 @@ libs/layers/render/renderenginebuilder.js
 libs/layers/driver.js
 libs/layers/scene/entity.js
 libs/layers/render/renderable.js
+src/person.js
 src/player.js
 src/level.js
 src/controller.js
 src/layerscroller.js
 src/messagedisplay.js
+src/rabbit.js
 src/storyteller.js
 src/world.js
 src/game.js

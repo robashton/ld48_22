@@ -1015,12 +1015,12 @@ define('libs/layers/render/renderable',[],function() {
 
 
 
-define('src/player',['require','../libs/layers/scene/entity','../libs/layers/render/material','../libs/layers/render/renderable'],function(require) {
+define('src/person',['require','../libs/layers/scene/entity','../libs/layers/render/material','../libs/layers/render/renderable'],function(require) {
 var Entity = require('../libs/layers/scene/entity');
 var Material = require('../libs/layers/render/material');
 var Renderable = require('../libs/layers/render/renderable');
 
-return function(depth) {
+return function(id, depth) {
   Entity.call(this);
 
   var self = this,
@@ -1036,7 +1036,7 @@ return function(depth) {
   ,   jumpHeight = -4.0
   ;
 
-  self.id = function() { return 'player'; }
+  self.id = function() { return id; }
 
   self.tick = function() {
     applyGravity();
@@ -1106,6 +1106,26 @@ return function(depth) {
     material.setImage(texture);
     renderable = new Renderable(0,0, width, height, material);
     layer.addRenderable(renderable);
+  };
+
+  self.on('addedToScene', onAddedToScene);
+};
+});
+
+define('src/player',['require','../libs/layers/scene/entity','../libs/layers/render/material','./person'],function(require) {
+
+var Entity = require('../libs/layers/scene/entity');
+var Material = require('../libs/layers/render/material');
+var Person = require('./person');
+
+return function(depth) {
+  Person.call(this, "player", depth);
+
+  var self = this;
+
+  var onAddedToScene = function(data) {
+    scene = data.scene;
+    layer = scene.getLayer(depth);
   };
 
   self.on('addedToScene', onAddedToScene);
@@ -1421,6 +1441,7 @@ define('src/messagedisplay',['require','../libs/layers/shared/eventable'],functi
 
 var Eventable = require('../libs/layers/shared/eventable');
 
+// In case you're wondering.. BREAKFAST #2
 return function() {
   Eventable.call(this);
 
@@ -1443,10 +1464,31 @@ return function() {
 
 });
 
-define('src/storyteller',['require','./messagedisplay','../libs/layers/scene/entity'],function(require) {
+define('src/rabbit',['require','../libs/layers/scene/entity','../libs/layers/render/material','./person'],function(require) {
+
+var Entity = require('../libs/layers/scene/entity');
+var Material = require('../libs/layers/render/material');
+var Person = require('./person');
+
+return function(depth) {
+  Person.call(this, "rabbit", depth);
+
+  var self = this;
+
+  var onAddedToScene = function(data) {
+    scene = data.scene;
+    layer = scene.getLayer(depth);
+  };
+
+  self.on('addedToScene', onAddedToScene);
+};
+});
+
+define('src/storyteller',['require','./messagedisplay','../libs/layers/scene/entity','./rabbit'],function(require) {
 
 var MessageDisplay = require('./messagedisplay');
 var Entity = require('../libs/layers/scene/entity');
+var Rabbit = require('./rabbit');
 
 return function() {
   Entity.call(this);
@@ -1457,6 +1499,7 @@ return function() {
   ,   messages = []
   ,   currentMessage = null
   ,   messageDisplay = null
+  ,   currentWaiter = null
   ;
 
   self.id = function() { return 'storyteller' };
@@ -1466,8 +1509,31 @@ return function() {
     showMessage("I have been in this room since I can remember");
     showMessage("I am fed, I have somewhere to sleep and it is warm");
     showMessage("There is no exit, this is all I know");
-    showMessage("I am");
-    showMessage("alone");
+    showMessage("I am... alone");
+    onMessagesFinished(addRabbitToScene);
+  };
+
+  var rabbit = null;
+  var addRabbitToScene = function() {
+    rabbit = new Rabbit(8.0);
+    rabbit.setPosition(90, 100);
+    scene.addEntity(rabbit);
+  };
+
+  
+
+
+
+
+
+
+
+
+
+
+
+  onMessagesFinished = function(callback) {
+    currentWaiter = callback;
   };
 
   var onAddedToScene = function(data) {
@@ -1496,7 +1562,15 @@ return function() {
 
   var onMessageClosed = function() {
     currentMessage = null;
-    tryShowNextMessage();
+    if(messages.length === 0) {
+      if(currentWaiter) {
+        var callback = currentWaiter;
+        currentWaiter = null;
+        callback();
+      }  
+    } else {
+      tryShowNextMessage();
+    }
   };
   
   self.on('addedToScene', onAddedToScene);
