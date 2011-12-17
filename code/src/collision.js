@@ -14,7 +14,7 @@ return function() {
   self.tick = function() {
     scene.crossEach(function(i, j, entityOne, entityTwo) {
       if(!entityOne.bounds || !entityTwo.bounds) return;
-      if(!entityOne.nofifyCollide && !entityTwo.notifyCollide) return;
+      if(!entityOne.notifyCollide && !entityTwo.notifyCollide) return;
 
       var boundsOne = entityOne.bounds();
       var boundsTwo = entityTwo.bounds();     

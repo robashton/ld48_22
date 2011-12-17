@@ -204,6 +204,9 @@ return function(name) {
     entity = new RenderEntity('first_lever', 'img/lever_off.png', 40, 118, 8.0, 15, 15);
     scene.addEntity(entity);
 
+    entity = new RenderEntity('second_lever', 'img/lever_off.png', 252, 42, 8.0, 15, 15);
+    scene.addEntity(entity);
+
     self.raise('loaded');
   };
 

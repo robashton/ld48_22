@@ -1035,6 +1035,7 @@ return function(id, depth) {
   ,   width = 20
   ,   height = 20
   ,   jumpHeight = -4.0
+  ,   issolid = true
   ;
 
   self.id = function() { return id; }
@@ -1058,12 +1059,12 @@ return function(id, depth) {
 
   self.moveLeft = function() {
     if(velocity[0] > -2.0)
-      velocity[0] -= 0.1;
+      velocity[0] -= 1.0;
   };
 
   self.moveRight = function() {
     if(velocity[0] < 2.0)
-      velocity[0] += 0.1;
+      velocity[0] += 1.0;
   };
 
   self.moveUp = function() {
@@ -1080,8 +1081,12 @@ return function(id, depth) {
     }
   }
 
+  self.issolid = function() {
+    return issolid;
+  };  
+
   self.notifyCollide = function(x, y, otherEntity) {
-    if(x) {
+    if(x && otherEntity.issolid() && self.issolid()) {
       position[0] += x;
     }
   };
@@ -1090,13 +1095,20 @@ return function(id, depth) {
     jumpHeight = height;
   };
 
+  self.setSolidity = function(value) {
+    issolid = value;
+  };
+
   var applyGravity = function() {
     velocity[1] += gravity;
   };
 
   var applyFriction = function() {
-    velocity[0] *= friction;
+    velocity[0] *= (friction * 0.7);
     velocity[1] *= friction;
+
+    if(Math.abs(velocity[0]) < 0.01)
+      velocity[0] = 0;
   };
 
   var applyVelocity = function() {
@@ -1165,9 +1177,14 @@ return function(id, imagePath, x, y, depth, width, height) {
   ,   scene = null
   ,   layer = null
   ,   renderable = null
+  ,   issolid = false
   ;
 
   self.id = function() { return id; }
+
+  self.setSolidity = function(value) {
+    issolid = value;
+  }
 
   self.bounds = function() {
     return {
@@ -1177,6 +1194,10 @@ return function(id, imagePath, x, y, depth, width, height) {
       height: height
     }
   }
+
+  self.issolid = function() {
+    return issolid;
+  };
 
   var addRenderable = function() {
     var material = new Material(255,255,255);
@@ -1413,6 +1434,9 @@ return function(name) {
     entity = new RenderEntity('first_lever', 'img/lever_off.png', 40, 118, 8.0, 15, 15);
     scene.addEntity(entity);
 
+    entity = new RenderEntity('second_lever', 'img/lever_off.png', 252, 42, 8.0, 15, 15);
+    scene.addEntity(entity);
+
     self.raise('loaded');
   };
 
@@ -1571,6 +1595,8 @@ return function(depth) {
   ;
 
   self.setJumpHeight(-5.0);
+  self.setSolidity(false);
+ 
   
   var oldTick = self.tick;
   self.tick = function() {
@@ -1593,7 +1619,7 @@ return function(depth) {
         self.moveUp();
     }
     
-    if(distanceFromTarget() < 30) {
+    if(distanceFromTarget() < bounds.width) {
       seeking = false;
       self.raise('reached-destination');
     }   
@@ -1629,11 +1655,12 @@ return function(depth) {
 };
 });
 
-define('src/storyteller',['require','./messagedisplay','../libs/layers/scene/entity','./rabbit'],function(require) {
+define('src/storyteller',['require','./messagedisplay','../libs/layers/scene/entity','./rabbit','./renderentity'],function(require) {
 
 var MessageDisplay = require('./messagedisplay');
 var Entity = require('../libs/layers/scene/entity');
 var Rabbit = require('./rabbit');
+var RenderEntity = require('./renderentity');
 
 var PLAYER_AVATAR = "img/playeravatar.png";
 var RABBIT_AVATAR = "img/rabbitavatar.png";
@@ -1702,7 +1729,21 @@ return function() {
   };
 
   var moveRabbitToSecondLever = function() {
-    moveEntityTo(rabbit, 252, 51, pullLeverForFirstBox);
+    moveEntityTo(rabbit, 252, 40, tryPullLeverForBox);
+  };
+
+  var tryPullLeverForBox = function() {
+    var player = scene.getEntity('player');
+    if(player.bounds().x > 130) {
+       showMessage("Hang on, get out of the way a second", RABBIT_AVATAR);
+       onMessagesFinished(waitForPlayerToMoveOutWayOfFirstBox);   
+    } else {
+      pullLeverForFirstBox();
+    }
+  };
+
+  var waitForPlayerToMoveOutWayOfFirstBox = function() {
+    whenPlayerReaches(scene.getEntity('first_lever'), tryPullLeverForBox);
   };
 
   var pullLeverForFirstBox = function() {
@@ -1712,7 +1753,9 @@ return function() {
   };
 
   addFirstBoxToScene = function() {
-
+    var box = new RenderEntity('first_box', 'img/box.png', 186, 110, 8.0, 30, 30);
+    box.setSolidity(true);
+    scene.addEntity(box);
   };
 
   rabbitFollowPlayerToSmashyMan = function() {
@@ -1834,7 +1877,7 @@ return function() {
   self.tick = function() {
     scene.crossEach(function(i, j, entityOne, entityTwo) {
       if(!entityOne.bounds || !entityTwo.bounds) return;
-      if(!entityOne.nofifyCollide && !entityTwo.notifyCollide) return;
+      if(!entityOne.notifyCollide && !entityTwo.notifyCollide) return;
 
       var boundsOne = entityOne.bounds();
       var boundsTwo = entityTwo.bounds();     

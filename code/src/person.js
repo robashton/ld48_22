@@ -17,6 +17,7 @@ return function(id, depth) {
   ,   width = 20
   ,   height = 20
   ,   jumpHeight = -4.0
+  ,   issolid = true
   ;
 
   self.id = function() { return id; }
@@ -40,12 +41,12 @@ return function(id, depth) {
 
   self.moveLeft = function() {
     if(velocity[0] > -2.0)
-      velocity[0] -= 0.1;
+      velocity[0] -= 1.0;
   };
 
   self.moveRight = function() {
     if(velocity[0] < 2.0)
-      velocity[0] += 0.1;
+      velocity[0] += 1.0;
   };
 
   self.moveUp = function() {
@@ -62,8 +63,12 @@ return function(id, depth) {
     }
   }
 
+  self.issolid = function() {
+    return issolid;
+  };  
+
   self.notifyCollide = function(x, y, otherEntity) {
-    if(x) {
+    if(x && otherEntity.issolid() && self.issolid()) {
       position[0] += x;
     }
   };
@@ -72,13 +77,20 @@ return function(id, depth) {
     jumpHeight = height;
   };
 
+  self.setSolidity = function(value) {
+    issolid = value;
+  };
+
   var applyGravity = function() {
     velocity[1] += gravity;
   };
 
   var applyFriction = function() {
-    velocity[0] *= friction;
+    velocity[0] *= (friction * 0.7);
     velocity[1] *= friction;
+
+    if(Math.abs(velocity[0]) < 0.01)
+      velocity[0] = 0;
   };
 
   var applyVelocity = function() {

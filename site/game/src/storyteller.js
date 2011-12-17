@@ -3,6 +3,7 @@ define(function(require) {
 var MessageDisplay = require('./messagedisplay');
 var Entity = require('../libs/layers/scene/entity');
 var Rabbit = require('./rabbit');
+var RenderEntity = require('./renderentity');
 
 var PLAYER_AVATAR = "img/playeravatar.png";
 var RABBIT_AVATAR = "img/rabbitavatar.png";
@@ -71,7 +72,21 @@ return function() {
   };
 
   var moveRabbitToSecondLever = function() {
-    moveEntityTo(rabbit, 252, 51, pullLeverForFirstBox);
+    moveEntityTo(rabbit, 252, 40, tryPullLeverForBox);
+  };
+
+  var tryPullLeverForBox = function() {
+    var player = scene.getEntity('player');
+    if(player.bounds().x > 130) {
+       showMessage("Hang on, get out of the way a second", RABBIT_AVATAR);
+       onMessagesFinished(waitForPlayerToMoveOutWayOfFirstBox);   
+    } else {
+      pullLeverForFirstBox();
+    }
+  };
+
+  var waitForPlayerToMoveOutWayOfFirstBox = function() {
+    whenPlayerReaches(scene.getEntity('first_lever'), tryPullLeverForBox);
   };
 
   var pullLeverForFirstBox = function() {
@@ -81,7 +96,9 @@ return function() {
   };
 
   addFirstBoxToScene = function() {
-
+    var box = new RenderEntity('first_box', 'img/box.png', 186, 110, 8.0, 30, 30);
+    box.setSolidity(true);
+    scene.addEntity(box);
   };
 
   rabbitFollowPlayerToSmashyMan = function() {

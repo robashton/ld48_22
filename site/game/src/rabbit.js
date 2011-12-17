@@ -14,6 +14,8 @@ return function(depth) {
   ;
 
   self.setJumpHeight(-5.0);
+  self.setSolidity(false);
+ 
   
   var oldTick = self.tick;
   self.tick = function() {
@@ -36,7 +38,7 @@ return function(depth) {
         self.moveUp();
     }
     
-    if(distanceFromTarget() < 30) {
+    if(distanceFromTarget() < bounds.width) {
       seeking = false;
       self.raise('reached-destination');
     }   

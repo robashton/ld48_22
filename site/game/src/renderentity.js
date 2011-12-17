@@ -11,9 +11,14 @@ return function(id, imagePath, x, y, depth, width, height) {
   ,   scene = null
   ,   layer = null
   ,   renderable = null
+  ,   issolid = false
   ;
 
   self.id = function() { return id; }
+
+  self.setSolidity = function(value) {
+    issolid = value;
+  }
 
   self.bounds = function() {
     return {
@@ -23,6 +28,10 @@ return function(id, imagePath, x, y, depth, width, height) {
       height: height
     }
   }
+
+  self.issolid = function() {
+    return issolid;
+  };
 
   var addRenderable = function() {
     var material = new Material(255,255,255);
