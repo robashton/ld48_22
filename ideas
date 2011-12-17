@@ -2,7 +2,6 @@ How about a spaceman, marooned on a moon-like surface, side scrolling slowly fro
 Alone, in the sense that he is marooned and there are humans left around him - does this mean we can have enemies?
 Hmm, that would make it no different to any other game where you have enemies..
 
-
 How about shipwreck? Nope
 
 Okay, puzzle game, you are in a room full of people. OH SNAP.
@@ -11,9 +10,34 @@ You feel alone
 
 The goal is to make friends with people by listening to their conversations, and then taking the pieces
 of information you have learned off each person to other people in the room and using them to make conversation.
-Conversations will be indicated by the use of shapes in speech bubbles
 
-Will this be compelling? Perhaps you speak to people and it somehow triggers a subgame (the real game) which is a game which depending on how well you do gives you abilities in future plays of that subgame.
+Conversations will be indicated by the use of shapes in speech bubbles?
+  Will this be compelling? 
+Perhaps you speak to people and it somehow triggers a subgame (the real game) which is a game which depending on how well you do gives you abilities in future plays of that subgame. Match up the conversation pieces with each other to make friends.
+
+Perhaps you have a goal, and you need to make friends to get to that goal, they'll follow you around once you have be-friended them
+
+Or go back to the pattern matching idea, people have attributes
+  - Things they are interested in talking about (A B C)
+  - Things they want to hear about (C D and E)
+  - Items that they have
+  - Items that they want
+
+You can make friends with a person by presenting them with both the items that they want, and the words they want to hear. Once you have given somebody the words they want to hear and the items they want then they'll give you the words they have and maybe their item too.
+
+Now, how are words and items different to each other? Maybe we start with just the words and you have some of them
+
+When you select the words to give to somebody, they'll tell you how many of the words are correct and you can choose different words to base
+  - Agh - this isn't fun, who wants to play this?!
+
+Okay, you speak to somebody, platform game starts with their conversation pieces available for collection
+Different platforms will require different conversation pieces to complete
+You might have to re-visit platforms once you have a conversation piece 
+
+--- Onto something here
+
+Once you have all the conversation pieces on a level, you'll get given an item that will help you in the game world
+
 
 Music will be a few pieces of guitar, simple notes in the background for ambience.
 Sound effects will be sfxr
