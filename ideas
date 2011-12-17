@@ -36,8 +36,20 @@ You might have to re-visit platforms once you have a conversation piece
 
 --- Onto something here
 
-Once you have all the conversation pieces on a level, you'll get given an item that will help you in the game world
+Once you have all the conversation pieces on a level, you'll get given an item that will help you out in the game world
+  - jump higher
+  - run faster
+  - gun
+  - jetpack
+  - shovel
 
+You can enter any level at anytime
+In between levels you have to speak to everybody at the party to get a bit more of the story
+
+The party takes place in a similar kind of engine to the platformer game
+That will make it easier for me
+And allow me to write some code
+speaking of which, let's commence.
 
 Music will be a few pieces of guitar, simple notes in the background for ambience.
 Sound effects will be sfxr
