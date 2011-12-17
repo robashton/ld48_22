@@ -3,6 +3,7 @@ define(function(require) {
 var Entity = require('../libs/layers/scene/entity');
 var Material = require('../libs/layers/render/material');
 var Renderable = require('../libs/layers/render/renderable');
+var RenderEntity = require('./renderentity');
 
 return function(name) {
   Entity.call(this);
@@ -176,7 +177,6 @@ return function(name) {
       }
     }
     createRenderables();
-    self.raise('loaded');   
   };
 
   var createRenderables = function() {
@@ -188,7 +188,16 @@ return function(name) {
         foregroundLayer.addRenderable(renderable);   
         foregroundRenderables[i + j * numWidth] = renderable;      
       }
-    }        
+    }
+    loadStaticObjects();        
+  };
+
+  var loadStaticObjects = function() {
+
+    var entity = new RenderEntity('first_door', 'img/door.png', 103, 12, 8.0, 15, 30);
+    scene.addEntity(entity);
+
+    self.raise('loaded');
   };
 
   self.on('addedToScene', onAddedToScene);

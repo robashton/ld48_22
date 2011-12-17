@@ -53,6 +53,21 @@ return function(id, depth) {
       velocity[1] = jumpHeight;
   };
 
+  self.bounds = function() {
+    return {
+      x: position[0],
+      y: position[1],
+      width: width,
+      height: height
+    }
+  }
+
+  self.notifyCollide = function(x, y, otherEntity) {
+    if(x) {
+      position[0] += x;
+    }
+  };
+
   var applyGravity = function() {
     velocity[1] += gravity;
   };

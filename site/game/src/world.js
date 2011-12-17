@@ -6,6 +6,7 @@ var Level = require('./level');
 var Controller = require('./controller');
 var Scroller = require('./layerscroller');
 var StoryTeller = require('./storyteller');
+var Collision = require('./collision');
 
 return function() {
   Entity.call(this);
@@ -17,6 +18,7 @@ return function() {
   ,   controls = null
   ,   scroller = null
   ,   story = null
+  ,   collision = null
   ;
 
   self.id = function() { return 'world'; }
@@ -36,6 +38,7 @@ return function() {
     removeControls();
     removeScroller();
     removeStoryTeller();
+    removeCollision();
   };
 
   var onLevelLoaded = function() {
@@ -43,6 +46,7 @@ return function() {
     addControls();
     addScroller();
     addStoryTeller();
+    addCollision();
     self.raise('ready');
   };
   
@@ -83,8 +87,18 @@ return function() {
   };
 
   var removeStoryTeller = function() {
-    scene.remoteEntity(story);
+    scene.removeEntity(story);
     story = null;
+  };
+
+  var addCollision = function() {
+    collision = new Collision();
+    scene.addEntity(collision);
+  };
+
+  var removeCollision = function() {
+    scene.removeEntity(collision);
+    collision = null;
   };
 
   var onAddedToScene = function(data) {

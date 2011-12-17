@@ -662,6 +662,7 @@ define('libs/layers/scene/scene',['../shared/eventable'], function(Eventable) {
     self.crossEach = function(callback) {
       for(var i = 0; i < entitiesByIndex.length; i++) {
         for(var j = i; j < entitiesByIndex.length; j++) {
+           if(i === j) continue;
            callback(i,j,entitiesByIndex[i], entitiesByIndex[j]);
         }
       }
@@ -1070,6 +1071,21 @@ return function(id, depth) {
       velocity[1] = jumpHeight;
   };
 
+  self.bounds = function() {
+    return {
+      x: position[0],
+      y: position[1],
+      width: width,
+      height: height
+    }
+  }
+
+  self.notifyCollide = function(x, y, otherEntity) {
+    if(x) {
+      position[0] += x;
+    }
+  };
+
   var applyGravity = function() {
     velocity[1] += gravity;
   };
@@ -1132,11 +1148,62 @@ return function(depth) {
 };
 });
 
-define('src/level',['require','../libs/layers/scene/entity','../libs/layers/render/material','../libs/layers/render/renderable'],function(require) {
+define('src/renderentity',['require','../libs/layers/scene/entity','../libs/layers/render/material','../libs/layers/render/renderable'],function(require) {
 
 var Entity = require('../libs/layers/scene/entity');
 var Material = require('../libs/layers/render/material');
 var Renderable = require('../libs/layers/render/renderable');
+
+return function(id, imagePath, x, y, depth, width, height) {
+  Entity.call(this);
+
+  var self = this
+  ,   scene = null
+  ,   layer = null
+  ,   renderable = null
+  ;
+
+  self.id = function() { return id; }
+
+  self.bounds = function() {
+    return {
+      x: x,
+      y: y,
+      width: width,
+      height: height
+    }
+  }
+
+  var addRenderable = function() {
+    var material = new Material(255,255,255);
+    var texture = scene.resources.get(imagePath);
+    material.setImage(texture);
+    renderable = new Renderable(x, y, width, height, material);
+    layer.addRenderable(renderable);
+  };
+
+  var removeRenderable = function() {
+    layer.removeRenderable(renderable);
+    renderable = null;
+  };
+
+  var onAddedToScene = function(data) {
+    scene = data.scene;
+    layer = scene.getLayer(depth);
+    addRenderable();
+  };
+
+  self.on('addedToScene', onAddedToScene);
+};
+
+});
+
+define('src/level',['require','../libs/layers/scene/entity','../libs/layers/render/material','../libs/layers/render/renderable','./renderentity'],function(require) {
+
+var Entity = require('../libs/layers/scene/entity');
+var Material = require('../libs/layers/render/material');
+var Renderable = require('../libs/layers/render/renderable');
+var RenderEntity = require('./renderentity');
 
 return function(name) {
   Entity.call(this);
@@ -1310,7 +1377,6 @@ return function(name) {
       }
     }
     createRenderables();
-    self.raise('loaded');   
   };
 
   var createRenderables = function() {
@@ -1322,7 +1388,16 @@ return function(name) {
         foregroundLayer.addRenderable(renderable);   
         foregroundRenderables[i + j * numWidth] = renderable;      
       }
-    }        
+    }
+    loadStaticObjects();        
+  };
+
+  var loadStaticObjects = function() {
+
+    var entity = new RenderEntity('first_door', 'img/door.png', 103, 12, 8.0, 15, 30);
+    scene.addEntity(entity);
+
+    self.raise('loaded');
   };
 
   self.on('addedToScene', onAddedToScene);
@@ -1587,7 +1662,86 @@ return function() {
 
 
 
-define('src/world',['require','../libs/layers/scene/entity','./player','./level','./controller','./layerscroller','./storyteller'],function(require) {
+define('src/collision',['require','../libs/layers/scene/entity'],function(require) {
+
+var Entity = require('../libs/layers/scene/entity');
+
+return function() {
+  Entity.call(this);
+
+  var self = this
+  ,   scene = null  
+  ;
+
+  self.id = function() { return "collision"; }
+
+  self.tick = function() {
+    scene.crossEach(function(i, j, entityOne, entityTwo) {
+      if(!entityOne.bounds || !entityTwo.bounds) return;
+      if(!entityOne.nofifyCollide && !entityTwo.notifyCollide) return;
+
+      var boundsOne = entityOne.bounds();
+      var boundsTwo = entityTwo.bounds();     
+
+      if(entityOne.notifyCollide) {
+        var intersectResult = intersect(boundsOne, boundsTwo);
+        if(!intersectResult.intersects) return;
+        entityOne.notifyCollide(intersectResult.x, intersectResult.y, entityTwo);
+      } 
+
+      if(entityTwo.notifyCollide) {
+        var intersectResult = intersect(boundsTwo, boundsOne);
+        if(!intersectResult.intersects) return;
+        entityTwo.notifyCollide(intersectResult.x, intersectResult.y, entityOne);
+      }    
+    });
+  };
+
+  var intersect = function(one, two ) {
+    var intersectResult = {
+      x: 0, y: 0, intersects: false
+    };
+    if(one.x > two.x + two.width) return intersectResult;
+    if(one.y > two.y + two.height) return intersectResult;
+    if(one.x + one.width < two.x) return intersectResult;
+    if(one.y + one.height < two.y) return intersectResult;
+
+    intersectResult.intersects = true;
+
+    // Clip right
+    if(one.x + one.width > two.x && 
+       one.x + one.width < two.x + two.width &&
+       one.y + (one.height / 2.0) > two.y &&
+       one.y + (one.height / 2.0) < two.y + two.height) {
+        
+      intersectResult.x = two.x - (one.x + one.width); // Return a negative value indicating the desired change
+      return intersectResult;     
+    }
+   
+    // Clip left
+    if(one.x > two.x && 
+       one.x < two.x + two.width &&
+       one.y + (one.height / 2.0) > two.y &&
+       one.y + (one.height / 2.0) < two.y + two.height) {
+        
+      intersectResult.x = (two.x + two.width) - one.x;  // Return a positive valye indicating the desired change
+      return intersectResult;     
+    }
+
+    // then top, then bottom (not relevant for the mo')
+    return intersectResult;
+  };
+
+  var onAddedToScene = function(data) {
+    scene = data.scene;
+  };
+
+  self.on('addedToScene', onAddedToScene);
+};
+
+});
+
+define('src/world',['require','../libs/layers/scene/entity','./player','./level','./controller','./layerscroller','./storyteller','./collision'],function(require) {
 
 var Entity = require('../libs/layers/scene/entity');
 var Player = require('./player');
@@ -1595,6 +1749,7 @@ var Level = require('./level');
 var Controller = require('./controller');
 var Scroller = require('./layerscroller');
 var StoryTeller = require('./storyteller');
+var Collision = require('./collision');
 
 return function() {
   Entity.call(this);
@@ -1606,6 +1761,7 @@ return function() {
   ,   controls = null
   ,   scroller = null
   ,   story = null
+  ,   collision = null
   ;
 
   self.id = function() { return 'world'; }
@@ -1625,6 +1781,7 @@ return function() {
     removeControls();
     removeScroller();
     removeStoryTeller();
+    removeCollision();
   };
 
   var onLevelLoaded = function() {
@@ -1632,6 +1789,7 @@ return function() {
     addControls();
     addScroller();
     addStoryTeller();
+    addCollision();
     self.raise('ready');
   };
   
@@ -1672,8 +1830,18 @@ return function() {
   };
 
   var removeStoryTeller = function() {
-    scene.remoteEntity(story);
+    scene.removeEntity(story);
     story = null;
+  };
+
+  var addCollision = function() {
+    collision = new Collision();
+    scene.addEntity(collision);
+  };
+
+  var removeCollision = function() {
+    scene.removeEntity(collision);
+    collision = null;
   };
 
   var onAddedToScene = function(data) {
