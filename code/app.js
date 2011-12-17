@@ -1,5 +1,4 @@
 define(function(require) {
-  var driver = require('./libs/layers/driver');
-
-
+  var game = require('./src/game');
+  
 });
