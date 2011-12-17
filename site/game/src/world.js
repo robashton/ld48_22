@@ -18,7 +18,7 @@ return function() {
   self.id = function() { return 'world'; }
 
   self.loadLevel = function(path) {
-    loadedLevel = new Level('img/test_level.png', 800, 600);
+    loadedLevel = new Level('img/partial_level.png', 800, 600);
     scene.addEntity(loadedLevel);
     addPlayer();
     addControls();
@@ -35,6 +35,7 @@ return function() {
   
   var addPlayer = function() {
     player = new Player(8.0);
+    player.setPosition(100, 100);
     scene.addEntity(player);
   };
 

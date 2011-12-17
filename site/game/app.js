@@ -1039,6 +1039,11 @@ return function(depth) {
     updateRenderable();
   };
 
+  self.setPosition = function(x, y) {
+    position[0] = x;
+    position[1] = y;
+  };
+
   self.moveLeft = function() {
     if(velocity[0] > -2.0)
       velocity[0] -= 0.1;
@@ -1126,7 +1131,7 @@ return function(foregroundPath, width, height) {
   };
 
   var clipDown = function(position, velocity, clipWidth, clipHeight) {
-    var levelCoords = convertToLevelCoords(position[0], position[1] + clipHeight);
+    var levelCoords = convertToLevelCoords(position[0] + (clipWidth / 2.0), position[1] + clipHeight);
     if(!solidAt(levelCoords.x, levelCoords.y + 1)) return;
 
     while(solidAt(levelCoords.x, levelCoords.y)) {
@@ -1188,7 +1193,7 @@ return function(foregroundPath, width, height) {
     for(var x = 0; x < texture.width; x++) {
       for(var y = 0; y < texture.height; y++) {
         var pixel = memoryContext.getImageData(x, y, 1, 1).data;
-        mapData[x + y * texture.width] = 255 - pixel[0];
+        mapData[x + y * texture.width] = pixel[3];
       }
     }
   };
@@ -1284,7 +1289,7 @@ return function() {
   self.id = function() { return 'world'; }
 
   self.loadLevel = function(path) {
-    loadedLevel = new Level('img/test_level.png', 800, 600);
+    loadedLevel = new Level('img/partial_level.png', 800, 600);
     scene.addEntity(loadedLevel);
     addPlayer();
     addControls();
@@ -1301,6 +1306,7 @@ return function() {
   
   var addPlayer = function() {
     player = new Player(8.0);
+    player.setPosition(100, 100);
     scene.addEntity(player);
   };
 

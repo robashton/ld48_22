@@ -28,7 +28,7 @@ return function(foregroundPath, width, height) {
   };
 
   var clipDown = function(position, velocity, clipWidth, clipHeight) {
-    var levelCoords = convertToLevelCoords(position[0], position[1] + clipHeight);
+    var levelCoords = convertToLevelCoords(position[0] + (clipWidth / 2.0), position[1] + clipHeight);
     if(!solidAt(levelCoords.x, levelCoords.y + 1)) return;
 
     while(solidAt(levelCoords.x, levelCoords.y)) {
@@ -90,7 +90,7 @@ return function(foregroundPath, width, height) {
     for(var x = 0; x < texture.width; x++) {
       for(var y = 0; y < texture.height; y++) {
         var pixel = memoryContext.getImageData(x, y, 1, 1).data;
-        mapData[x + y * texture.width] = 255 - pixel[0];
+        mapData[x + y * texture.width] = pixel[3];
       }
     }
   };

@@ -28,6 +28,11 @@ return function(depth) {
     updateRenderable();
   };
 
+  self.setPosition = function(x, y) {
+    position[0] = x;
+    position[1] = y;
+  };
+
   self.moveLeft = function() {
     if(velocity[0] > -2.0)
       velocity[0] -= 0.1;
