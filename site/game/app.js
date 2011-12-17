@@ -1039,6 +1039,21 @@ return function(depth) {
     updateRenderable();
   };
 
+  self.moveLeft = function() {
+    if(velocity[0] > -2.0)
+      velocity[0] -= 0.1;
+  };
+
+  self.moveRight = function() {
+    if(velocity[0] < 2.0)
+      velocity[0] += 0.1;
+  };
+
+  self.moveUp = function() {
+    if(velocity[1] === 0)
+      velocity[1] = -2.0;
+  };
+
   var applyGravity = function() {
     velocity[1] += gravity;
   };
@@ -1112,7 +1127,7 @@ return function(foregroundPath, width, height) {
 
   var clipDown = function(position, velocity, clipWidth, clipHeight) {
     var levelCoords = convertToLevelCoords(position[0], position[1] + clipHeight);
-    if(!solidAt(levelCoords.x, levelCoords.y)) return;
+    if(!solidAt(levelCoords.x, levelCoords.y + 1)) return;
 
     while(solidAt(levelCoords.x, levelCoords.y)) {
       levelCoords.y -= 1;
@@ -1182,11 +1197,79 @@ return function(foregroundPath, width, height) {
 };
 });
 
-define('src/world',['require','../libs/layers/scene/entity','./player','./level'],function(require) {
+define('src/controller',['require','../libs/layers/scene/entity'],function(require) {
+
+var Entity = require('../libs/layers/scene/entity');
+
+return function() {
+  Entity.call(this); var self = this;
+
+  var inputElement = document
+  ,   scene = null
+  ,   layer = null
+  ,   impulseLeft = false
+  ,   impulseRight = false
+  ,   impulseUp = false
+  ;
+
+  self.id = function() { return 'controller'; }
+
+  self.tick = function() {
+    scene.withEntity('player', function(player) {    
+      if(impulseLeft) 
+        player.moveLeft();
+      if(impulseRight)
+        player.moveRight();
+      if(impulseUp)
+        player.moveUp();
+    });
+  };
+
+  var onKeyDown = function(e) {
+    switch(e.keyCode) {
+      case 37:
+        impulseLeft = true;
+        break;
+      case 38:
+        impulseUp = true;
+        break;
+      case 39:
+        impulseRight = true;
+        break;
+    }
+  };
+
+  var onKeyUp = function(e) {
+    switch(e.keyCode) {
+      case 37:
+        impulseLeft = false;
+        break;
+      case 38:
+        impulseUp = false;
+        break;
+      case 39:
+        impulseRight = false;
+        break;
+    }
+  };
+
+  var onAddedToScene = function(data) {
+    scene = data.scene;
+    layer = scene.getLayer(8.0);
+  };
+
+  inputElement.onkeydown = onKeyDown;
+  inputElement.onkeyup  = onKeyUp;
+  self.on('addedToScene', onAddedToScene);
+};
+});
+
+define('src/world',['require','../libs/layers/scene/entity','./player','./level','./controller'],function(require) {
 
 var Entity = require('../libs/layers/scene/entity');
 var Player = require('./player');
 var Level = require('./level');
+var Controller = require('./controller');
 
 return function() {
   Entity.call(this);
@@ -1195,6 +1278,7 @@ return function() {
   ,   loadedLevel = null
   ,   scene = null
   ,   player = null
+  ,   controls = null
   ;
 
   self.id = function() { return 'world'; }
@@ -1203,6 +1287,7 @@ return function() {
     loadedLevel = new Level('img/test_level.png', 800, 600);
     scene.addEntity(loadedLevel);
     addPlayer();
+    addControls();
   };
 
   self.unloadLevel = function() {
@@ -1211,11 +1296,22 @@ return function() {
       loadedLevel = null;
     }
     removePlayer();    
+    removeControls();
   };
   
   var addPlayer = function() {
     player = new Player(8.0);
     scene.addEntity(player);
+  };
+
+  var addControls = function() {
+    controls = new Controller();
+    scene.addEntity(controls);
+  };
+
+  var removeControls = function() {
+    scene.removeEntity(controls);
+    controls = null;
   };
 
   var removePlayer = function() {

@@ -28,6 +28,21 @@ return function(depth) {
     updateRenderable();
   };
 
+  self.moveLeft = function() {
+    if(velocity[0] > -2.0)
+      velocity[0] -= 0.1;
+  };
+
+  self.moveRight = function() {
+    if(velocity[0] < 2.0)
+      velocity[0] += 0.1;
+  };
+
+  self.moveUp = function() {
+    if(velocity[1] === 0)
+      velocity[1] = -2.0;
+  };
+
   var applyGravity = function() {
     velocity[1] += gravity;
   };

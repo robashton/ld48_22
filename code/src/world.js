@@ -3,6 +3,7 @@ define(function(require) {
 var Entity = require('../libs/layers/scene/entity');
 var Player = require('./player');
 var Level = require('./level');
+var Controller = require('./controller');
 
 return function() {
   Entity.call(this);
@@ -11,6 +12,7 @@ return function() {
   ,   loadedLevel = null
   ,   scene = null
   ,   player = null
+  ,   controls = null
   ;
 
   self.id = function() { return 'world'; }
@@ -19,6 +21,7 @@ return function() {
     loadedLevel = new Level('img/test_level.png', 800, 600);
     scene.addEntity(loadedLevel);
     addPlayer();
+    addControls();
   };
 
   self.unloadLevel = function() {
@@ -27,11 +30,22 @@ return function() {
       loadedLevel = null;
     }
     removePlayer();    
+    removeControls();
   };
   
   var addPlayer = function() {
     player = new Player(8.0);
     scene.addEntity(player);
+  };
+
+  var addControls = function() {
+    controls = new Controller();
+    scene.addEntity(controls);
+  };
+
+  var removeControls = function() {
+    scene.removeEntity(controls);
+    controls = null;
   };
 
   var removePlayer = function() {

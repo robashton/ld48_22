@@ -29,7 +29,7 @@ return function(foregroundPath, width, height) {
 
   var clipDown = function(position, velocity, clipWidth, clipHeight) {
     var levelCoords = convertToLevelCoords(position[0], position[1] + clipHeight);
-    if(!solidAt(levelCoords.x, levelCoords.y)) return;
+    if(!solidAt(levelCoords.x, levelCoords.y + 1)) return;
 
     while(solidAt(levelCoords.x, levelCoords.y)) {
       levelCoords.y -= 1;
