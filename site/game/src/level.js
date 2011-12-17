@@ -26,7 +26,56 @@ return function(path) {
   };
 
   self.clip = function(position, velocity, clipWidth, clipHeight) {
+    clipLeft(position, velocity, clipWidth, clipHeight);
+    clipRight(position, velocity, clipWidth, clipHeight);
+
     clipDown(position, velocity, clipWidth, clipHeight);
+    clipUp(position, velocity, clipWidth, clipHeight);
+  };
+
+  var clipRight = function(position, velocity, clipWidth, clipHeight) {
+     var pointToTest = {
+      x: parseInt(position[0] + clipWidth),
+      y: parseInt(position[1] + (clipHeight / 2.0))
+    };
+
+    if(!solidAt(pointToTest.x + 1, pointToTest.y)) return;
+
+    while(solidAt(pointToTest.x, pointToTest.y)) {
+      pointToTest.x -= 1;
+    }  
+    position[0] = parseFloat(pointToTest.x) - clipWidth - 0.1;
+    velocity[0] = -Math.abs(velocity[0] * 0.5);  
+    
+  };
+  
+  var clipLeft = function(position, velocity, clipWidth, clipHeight) {
+     var pointToTest = {
+      x: parseInt(position[0]),
+      y: parseInt(position[1] + (clipHeight / 2.0))
+    };
+
+    if(!solidAt(pointToTest.x - 1, pointToTest.y)) return;
+
+    while(solidAt(pointToTest.x, pointToTest.y)) {
+      pointToTest.x += 1;
+    }  
+    position[0] = parseFloat(pointToTest.x) + 1.0;
+    velocity[0] = Math.abs(velocity[0] * 0.5);
+  };
+
+  var clipUp = function(position, velocity, clipWidth, clipHeight) {
+    var pointToTest = {
+      x: parseInt(position[0] + (clipWidth / 2.0)),
+      y: parseInt(position[1])
+    };
+    if(!solidAt(pointToTest.x, pointToTest.y - 1)) return;
+
+    while(solidAt(pointToTest.x, pointToTest.y)) {
+      pointToTest.y += 1;
+    }  
+    position[1] = parseFloat(pointToTest.y);
+    velocity[1] = 0;   
   };
 
   var clipDown = function(position, velocity, clipWidth, clipHeight) {
@@ -109,7 +158,7 @@ return function(path) {
     var memoryContext = memoryCanvas.getContext('2d');
 
     for(var i = 0; i < numWidth; i++) {
-      for(var j = 0; j < numHeight; j++) {
+      for(var j = 0; j < numHeight; j++) {        
 
         var texture = foregroundImages[i + j * numWidth].get();
         memoryContext.clearRect(0,0, chunkWidth, chunkHeight);
