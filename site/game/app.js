@@ -928,8 +928,214 @@ define('libs/layers/driver',['require','./resources/texturehandler','./resources
 
 });
 
-define('app',['require','./libs/layers/driver'],function(require) {
-  var driver = require('./libs/layers/driver');
+define('libs/layers/scene/entity',['../shared/eventable'], function(Eventable) {
+  return function() {
+    Eventable.call(this); var self = this;
+    var scene = null;
+    var eventListeners = {};
+
+    self.setScene = function(nscene) {
+      scene = nscene;
+      raiseAddedToScene();
+    };
+
+    self.clearScene = function() {
+      scene = null;
+      raiseRemovedFromScene();
+    };
+
+    var raiseAddedToScene = function() {
+      self.raise('addedToScene', {scene: scene });
+    };
+
+    var raiseRemovedFromScene = function() {
+      self.raise('removedFromScene');
+    };
+
+    var onAnyEventRaised = function(data) {
+      if(scene)
+        scene.raise(data.event, data.data);
+    };
+
+    self.onAny(onAnyEventRaised);
+  };
+});
 
 
+define('libs/layers/render/renderable',[],function() {
+  return function(x, y, width, height, material) {
+    var self = this;
+
+    var rx = 0;
+    var ry = 0;
+    var z = 0;
+    var rwidth = 0;
+    var rheight = 0;
+    var layer = null;
+    var rotation = 0;
+
+    self.setLayer = function(nlayer) {
+      layer = nlayer;
+      updateRenderCoords();
+      updateRenderSize();
+    };  
+
+    self.position = function(nx, ny) {
+      x = nx;
+      y = ny;
+      updateRenderCoords();
+    };
+
+    self.rotation = function(value) {
+      rotation = value;
+    };
+
+    self.render = function(context) {
+      context.fillRect(rx, ry, layer.getDepth(), rotation, rwidth, rheight, material);
+    };
+
+    var updateRenderCoords = function() {
+      rx = x * layer.getRenderScaleFactor();
+      ry = y * layer.getRenderScaleFactor();
+    };
+
+    var updateRenderSize = function() {
+      rwidth = width * layer.getRenderScaleFactor();
+      rheight = height * layer.getRenderScaleFactor();
+    };
+  };
+});
+
+
+
+define('src/player',['require','../libs/layers/scene/entity','../libs/layers/render/material','../libs/layers/render/renderable'],function(require) {
+var Entity = require('../libs/layers/scene/entity');
+var Material = require('../libs/layers/render/material');
+var Renderable = require('../libs/layers/render/renderable');
+
+return function(depth) {
+  Entity.call(this);
+
+  var self = this,
+      scene = null
+  ,   layer = null
+  ,   renderable = null
+  ;
+
+  self.id = function() { return 'player'; }
+
+  var onAddedToScene = function(data) {
+    scene = data.scene;
+    layer = scene.getLayer(depth);
+    addRenderable();
+  };
+
+  var addRenderable = function() {
+    var material = new Material(255,255,255);
+    var texture = scene.resources.get('img/player.png');
+    material.setImage(texture);
+    renderable = new Renderable(0,0, 20, 20, material);
+    layer.addRenderable(renderable);
+  };
+
+  self.on('addedToScene', onAddedToScene);
+
+};
+});
+
+define('src/world',['require','../libs/layers/scene/entity','./player'],function(require) {
+
+var Entity = require('../libs/layers/scene/entity');
+var Player = require('./player');
+
+return function() {
+  Entity.call(this);
+
+  var self = this
+  ,   loadedLevel = null
+  ,   scene = null
+  ,   player = null
+  ;
+
+  self.id = function() { return 'world'; }
+
+  self.loadLevel = function(path) {
+    loadedLevel = {};
+    addPlayer();
+  };
+
+  self.unloadLevel = function() {
+    if(loadedLevel) loadedLevel = {};
+    removePlayer();    
+  };
+  
+  var addPlayer = function() {
+    player = new Player(8.0);
+    scene.addEntity(player);
+  };
+
+  var removePlayer = function() {
+    scene.removeEntity(player);
+    player = null;
+  };
+
+  var onAddedToScene = function(data) {
+    scene = data.scene;
+    scene.addLayer(8.0);
+  };
+
+  self.on('addedToScene', onAddedToScene); 
+};
+
+}); 
+
+define('src/game',['require','../libs/layers/driver','../libs/layers/shared/eventable','./world'],function(require) {
+
+var Driver = require('../libs/layers/driver');
+var Eventable = require('../libs/layers/shared/eventable');
+var World = require('./world');
+
+return function() {
+  Eventable.call(this); 
+
+  var self = this
+  ,   driver = new Driver()
+  ;
+
+  self.start = function() {
+    driver.start();
+  };
+
+  self.stop = function() {
+    driver.stop();
+    self.raise('game-ended');
+  };
+
+  var populateScene = function() {
+    var scene = driver.scene();  
+   
+    var world = new World();
+    scene.addEntity(world); 
+    world.loadLevel('irrelevant');
+  };
+
+  var onDriverStarted = function() {
+    populateScene();
+  };
+
+  var onDriverStopped = function() {
+  
+  };
+
+  driver.on('started', onDriverStarted);
+  driver.on('stopped', onDriverStopped);
+
+};
+
+});
+
+define('app',['require','./src/game'],function(require) {
+  var Game = require('./src/game');
+  var game = new Game();
+  game.start();  
 });

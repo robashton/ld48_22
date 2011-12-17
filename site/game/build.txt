@@ -22,4 +22,9 @@ libs/layers/render/world.js
 libs/layers/render/renderengine.js
 libs/layers/render/renderenginebuilder.js
 libs/layers/driver.js
+libs/layers/scene/entity.js
+libs/layers/render/renderable.js
+src/player.js
+src/world.js
+src/game.js
 app.js

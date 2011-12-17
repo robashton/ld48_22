@@ -1,4 +1,5 @@
 define(function(require) {
-  var game = require('./src/game');
-  
+  var Game = require('./src/game');
+  var game = new Game();
+  game.start();  
 });
