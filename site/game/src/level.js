@@ -197,6 +197,9 @@ return function(name) {
     var entity = new RenderEntity('first_door', 'img/door.png', 103, 12, 8.0, 15, 30);
     scene.addEntity(entity);
 
+    entity = new RenderEntity('first_lever', 'img/lever_off.png', 40, 118, 8.0, 15, 15);
+    scene.addEntity(entity);
+
     self.raise('loaded');
   };
 

@@ -43,7 +43,12 @@ return function(id, imagePath, x, y, depth, width, height) {
     addRenderable();
   };
 
+  var onRemovedFromScene = function() {
+    removeRenderable();
+  };
+
   self.on('addedToScene', onAddedToScene);
+  self.on('removedFromScene', onRemovedFromScene);
 };
 
 });
