@@ -32,6 +32,10 @@ return function(depth) {
     position[0] = x;
     position[1] = y;
   };
+  
+  self.getPosition = function() {
+    return position;
+  };
 
   self.moveLeft = function() {
     if(velocity[0] > -2.0)

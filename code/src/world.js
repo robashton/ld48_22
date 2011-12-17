@@ -4,6 +4,7 @@ var Entity = require('../libs/layers/scene/entity');
 var Player = require('./player');
 var Level = require('./level');
 var Controller = require('./controller');
+var Scroller = require('./layerscroller');
 
 return function() {
   Entity.call(this);
@@ -13,15 +14,17 @@ return function() {
   ,   scene = null
   ,   player = null
   ,   controls = null
+  ,   scroller = null
   ;
 
   self.id = function() { return 'world'; }
 
   self.loadLevel = function(path) {
-    loadedLevel = new Level('img/partial_level.png', 800, 600);
+    loadedLevel = new Level('img/main/');
     scene.addEntity(loadedLevel);
     addPlayer();
     addControls();
+    addScroller();
   };
 
   self.unloadLevel = function() {
@@ -31,6 +34,7 @@ return function() {
     }
     removePlayer();    
     removeControls();
+    removeScroller();
   };
   
   var addPlayer = function() {
@@ -52,6 +56,16 @@ return function() {
   var removePlayer = function() {
     scene.removeEntity(player);
     player = null;
+  };
+  
+  var addScroller = function() {
+    scroller = new Scroller();
+    scene.addEntity(scroller);
+  };
+
+  var removeScroller = function() {
+    scene.removeEntity(scroller);
+    scroller = null;
   };
 
   var onAddedToScene = function(data) {

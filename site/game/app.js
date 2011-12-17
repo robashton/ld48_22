@@ -685,7 +685,8 @@ define('libs/layers/render/layer',['require','../shared/eventable'],function(req
         renderScaleFactor = config.renderScaleFactor,
         sceneWidth = config.sceneWidth,
         sceneHeight = config.sceneHeight,
-        transformX = 0;
+        transformX = 0,
+        transformY = 0;
 
     self.addRenderable = function (renderable) {
       items.push(renderable);
@@ -702,7 +703,7 @@ define('libs/layers/render/layer',['require','../shared/eventable'],function(req
     };
 
     self.render = function (context) {
-      context.translate(transformX * renderScaleFactor, 0);
+      context.translate(transformX * renderScaleFactor, transformY * renderScaleFactor);
       for (var i = 0; i < items.length; i++)
         renderItem(context, i);
       context.translate(0, 0);
@@ -737,9 +738,14 @@ define('libs/layers/render/layer',['require','../shared/eventable'],function(req
       self.raise('onTransformed', { x: x });
     };
 
+    self.transformY = function(y) {
+      transformY = y;
+      self.raise('onTransformed', { y: y });
+    };
+
     self.browserToGameWorld = function(points) {
       points[0] = transformX + (points[0] / renderScaleFactor);
-      points[1] = (points[1] / renderScaleFactor);
+      points[1] = transformY + (points[1] / renderScaleFactor);
       return points;
     };
 
@@ -1043,6 +1049,10 @@ return function(depth) {
     position[0] = x;
     position[1] = y;
   };
+  
+  self.getPosition = function() {
+    return position;
+  };
 
   self.moveLeft = function() {
     if(velocity[0] > -2.0)
@@ -1107,19 +1117,21 @@ var Entity = require('../libs/layers/scene/entity');
 var Material = require('../libs/layers/render/material');
 var Renderable = require('../libs/layers/render/renderable');
 
-return function(foregroundPath, width, height) {
+return function(path) {
   Entity.call(this);
 
   var self = this
   ,   scene = null
   ,   foregroundLayer = null
-  ,   foregroundImage = null
-  ,   mapData = []
-  ,   renderable = null
-  ,   scalex = 0
-  ,   scaley = 0
+  ,   foregroundImages = {}
+  ,   foregroundRenderables = {}
+  ,   mapData = {}
   ,   levelWidth = 0
   ,   levelHeight = 0
+  ,   numWidth = 0
+  ,   numHeight = 0
+  ,   chunkWidth = 0 
+  ,   chunkHeight = 0
   ;
 
   self.id = function() {
@@ -1127,9 +1139,9 @@ return function(foregroundPath, width, height) {
   };
 
   self.clip = function(position, velocity, clipWidth, clipHeight) {
-    clipDown(position, velocity, clipWidth, clipHeight);
+ //   clipDown(position, velocity, clipWidth, clipHeight);
   };
-
+/*
   var clipDown = function(position, velocity, clipWidth, clipHeight) {
     var levelCoords = convertToLevelCoords(position[0] + (clipWidth / 2.0), position[1] + clipHeight);
     if(!solidAt(levelCoords.x, levelCoords.y + 1)) return;
@@ -1160,42 +1172,90 @@ return function(foregroundPath, width, height) {
   var solidAt = function(x,y) {
     return mapData[x + y * levelWidth] > 0; 
   };
+ */
 
   var onAddedToScene = function(data) {
     scene = data.scene;
     foregroundLayer = scene.getLayer(8.0);
-    foregroundImage = scene.resources.get(foregroundPath);
-    foregroundImage.on('loaded', onLevelLoaded);
-    createRenderable();
+    loadData();
   };
 
-  var createRenderable = function() {
-    var material = new Material(255,255,255);
-    material.setImage(foregroundImage);
-    renderable = new Renderable(0,0, width, height, material);
-    foregroundLayer.addRenderable(renderable);
+  var loadData = function() {
+    $.get(path + 'imageSubdivide.xcf.rcm', function(data) {
+      processData(data);
+    });
   };
 
-  var onLevelLoaded = function() {
-    var texture = foregroundImage.get(); 
-    var memoryCanvas = document.createElement('canvas');
-    memoryCanvas.setAttribute('width', texture.width);  
-    memoryCanvas.setAttribute('height', texture.height); 
-    var memoryContext = memoryCanvas.getContext('2d');
-    memoryContext.drawImage(texture, 0, 0);
+  var processData = function(data) {
+    var lines = data.split('\n');
+    levelWidth = parseInt(lines[1]);
+    levelHeight = parseInt(lines[2]);
+    numWidth = parseInt(lines[3]);
+    numHeight = parseInt(lines[4]);
 
-    mapData = new Array(texture.width * texture.height);
-    scalex = texture.width / width;
-    scaley = texture.height / height;
-    levelWidth = texture.width;
-    levelHeight = texture.height;
+    chunkWidth = levelWidth / numWidth;
+    chunkHeight = levelHeight / numHeight;
 
-    for(var x = 0; x < texture.width; x++) {
-      for(var y = 0; y < texture.height; y++) {
-        var pixel = memoryContext.getImageData(x, y, 1, 1).data;
-        mapData[x + y * texture.width] = pixel[3];
+    loadChunks();    
+  };
+
+  var loadChunks = function() {
+    var countWaiting = 0;
+    for(var i = 0; i < numWidth; i++) {
+      for(var j = 0; j < numHeight; j++) {
+        countWaiting++;
+        loadChunk(i, j, function() {
+          countWaiting--;
+          if(countWaiting === 0)
+            createMapDataFromChunks();
+        });
       }
     }
+  };
+
+  var loadChunk = function(i, j, callback) {
+    var imgPath = path + 'imageSubdivide.xcf' + (i+1) + '-' + (j+1) + '.png';
+    var image = scene.resources.get(imgPath);
+    foregroundImages[j + i * numWidth] = image; 
+    image.on('loaded', callback);   
+  };
+
+  var createMapDataFromChunks = function() {
+    var memoryCanvas = document.createElement('canvas');
+    memoryCanvas.setAttribute('width', chunkWidth);  
+    memoryCanvas.setAttribute('height', chunkHeight); 
+    var memoryContext = memoryCanvas.getContext('2d');
+
+    for(var i = 0; i < numWidth; i++) {
+      for(var j = 0; j < numHeight; j++) {
+
+        var texture = foregroundImages[i + j * numWidth].get();
+        memoryContext.drawImage(texture, 0, 0);
+
+        var chunkData = new Array(chunkWidth * chunkHeight);
+        for(var x = 0; x < chunkWidth; x++) {
+          for(var y = 0; y < chunkHeight; y++) {
+            var pixel = memoryContext.getImageData(x, y, 1, 1).data;
+            chunkData[x + y * chunkWidth] = pixel[3];
+          }
+        }
+        mapData[i + j * numWidth] = chunkData;
+      }
+    }
+    createRenderables();
+    self.raise('loaded');   
+  };
+
+  var createRenderables = function() {
+    for(var i = 0; i < numWidth; i++) {
+      for(var j = 0; j < numHeight; j++) {
+        var material = new Material(255,255,255);
+        material.setImage(foregroundImages[i + j * numWidth]);
+        var renderable = new Renderable(i * chunkWidth , j * chunkHeight, chunkWidth, chunkHeight, material);
+        foregroundLayer.addRenderable(renderable);   
+        foregroundRenderables[i + j * numWidth] = renderable;      
+      }
+    }        
   };
 
   self.on('addedToScene', onAddedToScene);
@@ -1269,12 +1329,54 @@ return function() {
 };
 });
 
-define('src/world',['require','../libs/layers/scene/entity','./player','./level','./controller'],function(require) {
+define('src/layerscroller',['require','../libs/layers/scene/entity'],function(require) {
+
+var Entity = require('../libs/layers/scene/entity');
+
+return function(){
+  Entity.call(this);
+
+  var self = this
+  ,   scene = null
+  ,   topLayer = null
+  ;
+    
+  self.id = function() { return "scroller"; }
+  
+  self.tick = function() {
+    scene.withEntity('player', function(player) {
+    
+      var position = player.getPosition();
+
+      scrollx = position[0] - (topLayer.getWidth() / 2.0); 
+      scrolly = position[1] - (topLayer.getHeight() / 2.0);
+
+      scene.eachLayer(function(layer) {
+        layer.transformX(scrollx);
+        layer.transformY(scrolly);
+      });
+
+    });
+  };
+
+
+  var onAddedToScene = function(data) {
+    scene = data.scene;
+    topLayer = scene.getLayer(8.0);
+  };
+  
+  self.on('addedToScene', onAddedToScene);  
+};
+
+});
+
+define('src/world',['require','../libs/layers/scene/entity','./player','./level','./controller','./layerscroller'],function(require) {
 
 var Entity = require('../libs/layers/scene/entity');
 var Player = require('./player');
 var Level = require('./level');
 var Controller = require('./controller');
+var Scroller = require('./layerscroller');
 
 return function() {
   Entity.call(this);
@@ -1284,15 +1386,17 @@ return function() {
   ,   scene = null
   ,   player = null
   ,   controls = null
+  ,   scroller = null
   ;
 
   self.id = function() { return 'world'; }
 
   self.loadLevel = function(path) {
-    loadedLevel = new Level('img/partial_level.png', 800, 600);
+    loadedLevel = new Level('img/main/');
     scene.addEntity(loadedLevel);
     addPlayer();
     addControls();
+    addScroller();
   };
 
   self.unloadLevel = function() {
@@ -1302,6 +1406,7 @@ return function() {
     }
     removePlayer();    
     removeControls();
+    removeScroller();
   };
   
   var addPlayer = function() {
@@ -1323,6 +1428,16 @@ return function() {
   var removePlayer = function() {
     scene.removeEntity(player);
     player = null;
+  };
+  
+  var addScroller = function() {
+    scroller = new Scroller();
+    scene.addEntity(scroller);
+  };
+
+  var removeScroller = function() {
+    scene.removeEntity(scroller);
+    scroller = null;
   };
 
   var onAddedToScene = function(data) {
