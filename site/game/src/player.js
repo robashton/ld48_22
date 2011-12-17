@@ -10,12 +10,46 @@ return function(depth) {
       scene = null
   ,   layer = null
   ,   renderable = null
+  ,   position = vec3.create([0,0,0])
+  ,   velocity = vec3.create([0,0,0])
+  ,   friction = 0.98
+  ,   gravity = 0.08
+  ,   width = 20
+  ,   height = 20
   ;
 
   self.id = function() { return 'player'; }
 
   self.tick = function() {
-    
+    applyGravity();
+    applyFriction();
+    applyVelocity();
+    applyMapBounds();
+    updateRenderable();
+  };
+
+  var applyGravity = function() {
+    velocity[1] += gravity;
+  };
+
+  var applyFriction = function() {
+    velocity[0] *= friction;
+    velocity[1] *= friction;
+  };
+
+  var applyVelocity = function() {
+    position[0] += velocity[0];
+    position[1] += velocity[1];
+  };
+
+  var updateRenderable = function() {
+    renderable.position(position[0], position[1]);
+  };
+
+  var applyMapBounds = function() {
+    scene.withEntity('current-level', function(level) {
+      level.clip(position, velocity, width, height);
+    });
   };
 
   var onAddedToScene = function(data) {
@@ -28,7 +62,7 @@ return function(depth) {
     var material = new Material(255,255,255);
     var texture = scene.resources.get('img/player.png');
     material.setImage(texture);
-    renderable = new Renderable(0,0, 20, 20, material);
+    renderable = new Renderable(0,0, width, height, material);
     layer.addRenderable(renderable);
   };
 
