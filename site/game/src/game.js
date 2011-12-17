@@ -3,12 +3,14 @@ define(function(require) {
 var Driver = require('../libs/layers/driver');
 var Eventable = require('../libs/layers/shared/eventable');
 var World = require('./world');
+var PickupController = require('./pickupcontroller');
 
 return function() {
   Eventable.call(this); 
 
   var self = this
   ,   driver = new Driver()
+  ,   pickupController = null;
   ;
 
   self.start = function() {
@@ -27,6 +29,7 @@ return function() {
     world.on('ready', onWorldReady);
     scene.addEntity(world);
     world.loadLevel('irrelevant');
+    pickupController = new PickupController(scene);
   };
 
   var onDriverStarted = function() {

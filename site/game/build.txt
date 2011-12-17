@@ -27,6 +27,7 @@ libs/layers/render/renderable.js
 src/person.js
 src/player.js
 src/renderentity.js
+src/pickup.js
 src/level.js
 src/controller.js
 src/layerscroller.js
@@ -37,5 +38,6 @@ src/smashyman.js
 src/storyteller.js
 src/collision.js
 src/world.js
+src/pickupcontroller.js
 src/game.js
 app.js

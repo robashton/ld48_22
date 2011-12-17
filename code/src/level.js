@@ -4,6 +4,7 @@ var Entity = require('../libs/layers/scene/entity');
 var Material = require('../libs/layers/render/material');
 var Renderable = require('../libs/layers/render/renderable');
 var RenderEntity = require('./renderentity');
+var Pickup = require('./pickup');
 
 return function(name) {
   Entity.call(this);
@@ -208,6 +209,12 @@ return function(name) {
     scene.addEntity(entity);
 
     entity = new RenderEntity('third_lever', 'img/lever_off.png', 405, 42, 8.0, 15, 15);
+    scene.addEntity(entity);
+
+    entity = new RenderEntity('first_wall', 'img/wall.png', 565, 30, 8.0, 10, 60);
+    scene.addEntity(entity);
+
+    entity = new Pickup('gun', 'img/gun-pickup.png', 723, 73, 8.0, 16, 16);
     scene.addEntity(entity);
 
     self.raise('loaded');

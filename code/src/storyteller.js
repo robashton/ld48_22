@@ -5,10 +5,12 @@ var Entity = require('../libs/layers/scene/entity');
 var Rabbit = require('./rabbit');
 var RenderEntity = require('./renderentity');
 var SmashyMan = require('./smashyman');
+var Npc = require('./npc');
 
 var PLAYER_AVATAR = "img/playeravatar.png";
 var RABBIT_AVATAR = "img/rabbitavatar.png";
 var SMASHY_AVATAR = "img/smashyavatar.png";
+var WIZARD_AVATAR = "img/wizardavatar.png";
 
 return function() {
   Entity.call(this);
@@ -124,10 +126,6 @@ return function() {
     onMessagesFinished(moveSmashyManToBrickWall);
   };
 
-  var moveSmashyManToBrickWall = function() {
-    moveEntityTo(smashyMan, 425, 40, smashBrickWall);
-  };
-
   var tryPullLeverForSecondBox = function() {
     updateEntityState("third_lever", "open");
     addSecondBoxToScene();
@@ -139,13 +137,94 @@ return function() {
     scene.addEntity(box);
   };
 
-  var smashBrickWall = function() {
-    console.log('Smashy smash');
+  var moveSmashyManToBrickWall = function() {
+    moveEntityTo(smashyMan, 565, 60, smashBrickWall);
+  };
 
+  var smashBrickWall = function() {
+    removeEntity('first_wall');
     moveEntityTo(rabbit, 690, 90, function(){});
     moveEntityTo(smashyMan, 670, 90, function(){});
   };
+
+  var onGunPickedUp = function() {
+    showMessage("Ooh, careful with that - it's a laser mega blaster 9000?", RABBIT_AVATAR);
+    showMessage("ME SMASH YOU SHOOT, LETS GO", SMASHY_AVATAR);
+    showMessage("Okay, let's get out of here", PLAYER_AVATAR);
+    onMessagesFinished(moveNpcsToEnergyBarrier);
+  };
+
+  var moveNpcsToEnergyBarrier = function() {
+    moveEntityTo(rabbit, 840, 64, function(){});
+    moveEntityTo(smashyMan, 840, 64, talkAboutEnergyBarrier);
+  };
+
+  var talkAboutEnergyBarrier = function() {
+    showMessage("If you could kindly smash through that for us mr smashy?", RABBIT_AVATAR);
+    showMessage("ME NO SMASH THROUGH LIGHT, LIGHT HURT SMASHY", SMASHY_AVATAR);
+    showMessage("I guess that's it, we have to give up", PLAYER_AVATAR);
+    showMessage("All of that for nothing?!", RABBIT_AVATAR);
+    showMessage("At least we met each other, I forgot what it was like to have friends", PLAYER_AVATAR);
+    showMessage("SMASHY GET EMOTIONAL NOW", SMASHY_AVATAR);
+    onMessagesFinished(spawnWizardBehindBarrier);
+  };
+
+  var wizard = null;
+  var spawnWizardBehindBarrier = function() {
+    wizard = new Npc("wizard", 8.0);
+    wizard.setPosition(990, 40);
+    scene.addEntity(wizard);
+    setTimeout(tellPlayersAboutEvilPlan, 1000);
+  };
+
+  var tellPlayersAboutEvilPlan = function() {
+    showMessage("Oh ho ho, what do we have here?", WIZARD_AVATAR);
+    showMessage("Hello sir, would you mind helping us out?", RABBIT_AVATAR);
+    showMessage("Helping you out? Ha Ha Ha - I'm the one who put you in here!", WIZARD_AVATAR);
+    showMessage("Tell you what, I'll let the strongest of you run the gauntlet. You just have to kill the others and I'll lower the barrier", WIZARD_AVATAR);
+    showMessage("NEVER!", RABBIT_AVATAR);
+    showMessage("NEVER!", SMASHY_AVATAR);
+    showMessage("...", PLAYER_AVATAR);
+    showMessage("...", PLAYER_AVATAR);
+    onMessagesFinished(letPlayerDecideWhatherToContinue);
+  };
+
+  var letPlayerDecideWhatherToContinue = function() {
+    scene.withEntity('player', function(player) {
+      player.armGun();
+    });
+    rabbit.on('killed', onRabbitKilled);
+    smashyMan.on('killed', onSmashyManKilled);
+  };
+
+  var onRabbitKilled = function() {
+    scene.removeEntity(rabbit);
+    rabbit = null;
+    onFriendyKilled();
+  };
+
+  var onSmashyManKilled = function() {
+    scene.removeEntity(smashyMan);
+    smashyMan = null;
+    onFriendyKilled();
+  };
   
+  var onFriendyKilled = function() {
+    if(smashyMan || rabbit) return;
+    tellPlayerHeCanProceed();
+  };
+
+  var tellPlayerHeCanProceed = function() {
+     showMessage("Bwahahaa, very well then - you may proceed now you are ALONE...", WIZARD_AVATAR);
+     onMessagesFinished(takeDownBarrier);
+  };
+
+  var takeDownBarrier = function() {
+    
+  };
+  
+  
+
   var moveEntityTo = function(entity, x, y, callback) {
     entity.moveTo(x, y);
     whenEntityReachesTarget(entity, callback);
@@ -198,6 +277,11 @@ return function() {
     scene = data.scene;
     world = scene.getEntity('world');
     world.on('ready', onWorldReady);
+    hookPlayerEvents();
+  };
+
+  var hookPlayerEvents = function() {
+    scene.on('gun-picked-up', onGunPickedUp);
   };
 
   var addMessageDisplay = function() {
