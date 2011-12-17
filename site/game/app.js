@@ -1240,6 +1240,10 @@ return function(name) {
     clipUp(position, velocity, clipWidth, clipHeight);
   };
 
+  self.isPointInWall = function(x, y) {
+    return solidAt(parseInt(x),parseInt(y));
+  };
+
   var clipRight = function(position, velocity, clipWidth, clipHeight) {
      var pointToTest = {
       x: parseInt(position[0] + clipWidth),
@@ -1556,12 +1560,64 @@ var Person = require('./person');
 return function(depth) {
   Person.call(this, "rabbit", depth);
 
-  var self = this;
+  var self = this
+  ,   destx = 0
+  ,   desty = 0
+  ,   seeking = false
+  ;
+
+  var oldTick = self.tick;
+  self.tick = function() {
+    oldTick();
+    if(seeking)
+      moveTowardsTarget();
+  };
+
+  var moveTowardsTarget = function() {
+    var bounds = self.bounds();
+
+    if(bounds.x > destx) {
+      self.moveLeft();
+      if(pointIsInWall(bounds.x - 5.0, bounds.y + (bounds.height / 2.0)))
+        self.moveUp();
+    }
+    else {
+      self.moveRight();  
+      if(pointIsInWall(bounds.x + bounds.width + 5.0, bounds.y + (bounds.height / 2.0)))
+        self.moveUp();
+    }
+    
+    if(distanceFromTarget() < 30) {
+      seeking = false;
+      self.raise('reached-destination');
+    }   
+  };
+
+  var pointIsInWall = function(x, y) {
+   var level = scene.getEntity('current-level');
+   return level.isPointInWall(x, y);
+  };
+
+  self.moveTo = function(x, y) {
+    seeking = true;
+    destx = x;
+    desty = y;
+  };
+
+  var distanceFromTarget = function() {
+    var bounds = self.bounds();
+    var pOne = vec3.create([bounds.x + bounds.width / 2.0, bounds.y + bounds.height / 2.0, 0]);
+    var pTwo = vec3.create([destx, desty, 0]);
+    vec3.subtract(pTwo, pOne);
+    return vec3.length(pTwo);
+  };
+
 
   var onAddedToScene = function(data) {
     scene = data.scene;
     layer = scene.getLayer(depth);
   };
+
 
   self.on('addedToScene', onAddedToScene);
 };
@@ -1601,7 +1657,9 @@ return function() {
     showMessage("I am fed, I have somewhere to sleep and it is warm", PLAYER_AVATAR );
     showMessage("There is no exit, this is all I know", PLAYER_AVATAR );
     showMessage("I am... alone");
-    onMessagesFinished(addRabbitToScene);
+    onMessagesFinished(function() {
+      setTimeout(addRabbitToScene, 2000);
+    });
   };
 
   var rabbit = null;
@@ -1609,14 +1667,18 @@ return function() {
     rabbit = new Rabbit(8.0);
     rabbit.setPosition(90, 100);
     scene.addEntity(rabbit);
-    setTimeout(tellPlayerHereToRescueHim, 2000);
+    setTimeout(tellPlayerHereToRescueHim, 500);
   };
 
   var tellPlayerHereToRescueHim = function() {
     showMessage("Hi, I am here to get you out", RABBIT_AVATAR);
     showMessage("What... what.... who are you?", PLAYER_AVATAR);
     showMessage("That doesn't matter, just come down here when I open the door", RABBIT_AVATAR);
-    onMessagesFinished(openCellDoor);
+    onMessagesFinished(moveRabbitToFirstLever);
+  };
+
+  var moveRabbitToFirstLever = function() {
+    moveEntityTo(rabbit, 40, 118, openCellDoor);
   };
 
   var openCellDoor = function() {
@@ -1628,8 +1690,40 @@ return function() {
   var tellHimAboutThePlan = function() {
     showMessage("Hi, my name is rabbit", RABBIT_AVATAR);
     showMessage("Will.. will you be my friend?", PLAYER_AVATAR);
-    showMessage("Er.. sure, if you give me a carrot", RABBIT_AVATAR);
+    showMessage("Er.. sure, why not - I've never had a friend before", RABBIT_AVATAR);
+    showMessage("Anyway, we need to get out of here - I don't know what is going on but I don't want to end up in a cell again.", RABBIT_AVATAR);
+    onMessagesFinished(moveRabbitToSecondLever);   
+  };
+
+  var moveRabbitToSecondLever = function() {
+    moveEntityTo(rabbit, 252, 51, pullLeverForFirstBox);
+  };
+
+  var pullLeverForFirstBox = function() {
+    updateEntityState("second_lever", "open");
+    addFirstBoxToScene();
+    whenPlayerReaches(rabbit, rabbitFollowPlayerToSmashyMan);
+  };
+
+  addFirstBoxToScene = function() {
+
+  };
+
+  rabbitFollowPlayerToSmashyMan = function() {
     
+  }; 
+  
+  var moveEntityTo = function(entity, x, y, callback) {
+    entity.moveTo(x, y);
+    whenEntityReachesTarget(entity, callback);
+  };
+
+  var whenEntityReachesTarget = function(entity, callback) {
+    var listener = function() {
+      entity.off('reached-destination', listener);
+      callback();
+    };
+    entity.on('reached-destination', listener);
   };
 
   var whenPlayerReaches = function(entity, callback) {

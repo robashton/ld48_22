@@ -35,6 +35,10 @@ return function(name) {
     clipUp(position, velocity, clipWidth, clipHeight);
   };
 
+  self.isPointInWall = function(x, y) {
+    return solidAt(parseInt(x),parseInt(y));
+  };
+
   var clipRight = function(position, velocity, clipWidth, clipHeight) {
      var pointToTest = {
       x: parseInt(position[0] + clipWidth),

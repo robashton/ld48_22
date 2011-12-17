@@ -32,7 +32,9 @@ return function() {
     showMessage("I am fed, I have somewhere to sleep and it is warm", PLAYER_AVATAR );
     showMessage("There is no exit, this is all I know", PLAYER_AVATAR );
     showMessage("I am... alone");
-    onMessagesFinished(addRabbitToScene);
+    onMessagesFinished(function() {
+      setTimeout(addRabbitToScene, 2000);
+    });
   };
 
   var rabbit = null;
@@ -40,14 +42,18 @@ return function() {
     rabbit = new Rabbit(8.0);
     rabbit.setPosition(90, 100);
     scene.addEntity(rabbit);
-    setTimeout(tellPlayerHereToRescueHim, 2000);
+    setTimeout(tellPlayerHereToRescueHim, 500);
   };
 
   var tellPlayerHereToRescueHim = function() {
     showMessage("Hi, I am here to get you out", RABBIT_AVATAR);
     showMessage("What... what.... who are you?", PLAYER_AVATAR);
     showMessage("That doesn't matter, just come down here when I open the door", RABBIT_AVATAR);
-    onMessagesFinished(openCellDoor);
+    onMessagesFinished(moveRabbitToFirstLever);
+  };
+
+  var moveRabbitToFirstLever = function() {
+    moveEntityTo(rabbit, 40, 118, openCellDoor);
   };
 
   var openCellDoor = function() {
@@ -59,8 +65,40 @@ return function() {
   var tellHimAboutThePlan = function() {
     showMessage("Hi, my name is rabbit", RABBIT_AVATAR);
     showMessage("Will.. will you be my friend?", PLAYER_AVATAR);
-    showMessage("Er.. sure, if you give me a carrot", RABBIT_AVATAR);
+    showMessage("Er.. sure, why not - I've never had a friend before", RABBIT_AVATAR);
+    showMessage("Anyway, we need to get out of here - I don't know what is going on but I don't want to end up in a cell again.", RABBIT_AVATAR);
+    onMessagesFinished(moveRabbitToSecondLever);   
+  };
+
+  var moveRabbitToSecondLever = function() {
+    moveEntityTo(rabbit, 252, 51, pullLeverForFirstBox);
+  };
+
+  var pullLeverForFirstBox = function() {
+    updateEntityState("second_lever", "open");
+    addFirstBoxToScene();
+    whenPlayerReaches(rabbit, rabbitFollowPlayerToSmashyMan);
+  };
+
+  addFirstBoxToScene = function() {
+
+  };
+
+  rabbitFollowPlayerToSmashyMan = function() {
     
+  }; 
+  
+  var moveEntityTo = function(entity, x, y, callback) {
+    entity.moveTo(x, y);
+    whenEntityReachesTarget(entity, callback);
+  };
+
+  var whenEntityReachesTarget = function(entity, callback) {
+    var listener = function() {
+      entity.off('reached-destination', listener);
+      callback();
+    };
+    entity.on('reached-destination', listener);
   };
 
   var whenPlayerReaches = function(entity, callback) {
