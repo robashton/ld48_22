@@ -1417,13 +1417,110 @@ return function(){
 
 });
 
-define('src/world',['require','../libs/layers/scene/entity','./player','./level','./controller','./layerscroller'],function(require) {
+define('src/messagedisplay',['require','../libs/layers/shared/eventable'],function(require) {
+
+var Eventable = require('../libs/layers/shared/eventable');
+
+return function() {
+  Eventable.call(this);
+
+  var self = this;
+
+  self.setMessage = function(text) {
+    $('#messagebox').fadeIn("slow");
+    $('#messagebox-text').text(text);
+  };
+ 
+  var hideMessage = function(text) {
+    $('#messagebox').fadeOut("fast", function(){
+      self.raise('messageclosed');
+    });
+  };
+
+  $('#messagebox-accept').click(hideMessage);
+
+};
+
+});
+
+define('src/storyteller',['require','./messagedisplay','../libs/layers/scene/entity'],function(require) {
+
+var MessageDisplay = require('./messagedisplay');
+var Entity = require('../libs/layers/scene/entity');
+
+return function() {
+  Entity.call(this);
+
+  var self = this
+  ,   scene = null
+  ,   world = null
+  ,   messages = []
+  ,   currentMessage = null
+  ,   messageDisplay = null
+  ;
+
+  self.id = function() { return 'storyteller' };
+
+  var onWorldReady = function() {
+    addMessageDisplay();
+    showMessage("I have been in this room since I can remember");
+    showMessage("I am fed, I have somewhere to sleep and it is warm");
+    showMessage("There is no exit, this is all I know");
+    showMessage("I am");
+    showMessage("alone");
+  };
+
+  var onAddedToScene = function(data) {
+    scene = data.scene;
+    world = scene.getEntity('world');
+    world.on('ready', onWorldReady);
+  };
+
+  var addMessageDisplay = function() {
+    messageDisplay = new MessageDisplay();
+    messageDisplay.on('messageclosed', onMessageClosed);
+  };
+
+  var showMessage = function(text) {
+    messages.push({text: text});
+    tryShowNextMessage();
+  };
+
+  var tryShowNextMessage = function() {
+    if(currentMessage) return;
+    if(messages.length === 0) return;
+
+    currentMessage = messages.shift();
+    messageDisplay.setMessage(currentMessage.text);
+  };
+
+  var onMessageClosed = function() {
+    currentMessage = null;
+    tryShowNextMessage();
+  };
+  
+  self.on('addedToScene', onAddedToScene);
+};
+
+});
+
+
+
+
+
+
+
+
+
+
+define('src/world',['require','../libs/layers/scene/entity','./player','./level','./controller','./layerscroller','./storyteller'],function(require) {
 
 var Entity = require('../libs/layers/scene/entity');
 var Player = require('./player');
 var Level = require('./level');
 var Controller = require('./controller');
 var Scroller = require('./layerscroller');
+var StoryTeller = require('./storyteller');
 
 return function() {
   Entity.call(this);
@@ -1434,6 +1531,7 @@ return function() {
   ,   player = null
   ,   controls = null
   ,   scroller = null
+  ,   story = null
   ;
 
   self.id = function() { return 'world'; }
@@ -1441,9 +1539,7 @@ return function() {
   self.loadLevel = function(path) {
     loadedLevel = new Level('main');
     scene.addEntity(loadedLevel);
-    addPlayer();
-    addControls();
-    addScroller();
+    loadedLevel.on('loaded', onLevelLoaded);
   };
 
   self.unloadLevel = function() {
@@ -1454,6 +1550,15 @@ return function() {
     removePlayer();    
     removeControls();
     removeScroller();
+    removeStoryTeller();
+  };
+
+  var onLevelLoaded = function() {
+    addPlayer();
+    addControls();
+    addScroller();
+    addStoryTeller();
+    self.raise('ready');
   };
   
   var addPlayer = function() {
@@ -1485,6 +1590,16 @@ return function() {
   var removeScroller = function() {
     scene.removeEntity(scroller);
     scroller = null;
+  };
+
+  var addStoryTeller = function() {
+    story = new StoryTeller();
+    scene.addEntity(story);
+  };
+
+  var removeStoryTeller = function() {
+    scene.remoteEntity(story);
+    story = null;
   };
 
   var onAddedToScene = function(data) {
@@ -1523,7 +1638,8 @@ return function() {
     var scene = driver.scene();  
    
     var world = new World();
-    scene.addEntity(world); 
+    world.on('ready', onWorldReady);
+    scene.addEntity(world);
     world.loadLevel('irrelevant');
   };
 
@@ -1535,6 +1651,10 @@ return function() {
   
   };
 
+  var onWorldReady = function() {
+    self.raise('ready');
+  };
+
   driver.on('started', onDriverStarted);
   driver.on('stopped', onDriverStopped);
 
@@ -1544,6 +1664,34 @@ return function() {
 
 define('app',['require','./src/game'],function(require) {
   var Game = require('./src/game');
-  var game = new Game();
-  game.start();  
-});
+
+  var currentGame = null;
+
+  var onGameReady = function() {
+    $('#game-container').show();
+    $('#loading').hide();
+    $('#splash').hide();
+  };
+
+  var startGame = function() {
+    $('#game-container').hide();
+    $('#loading').show();
+    $('#splash').hide();
+    currentGame = new Game();
+    currentGame.on('ready', onGameReady);
+    currentGame.start();
+  };
+
+  var showInstructions = function() {
+    
+  };
+
+  $(document).ready(function() {
+    $('#game-container').hide();
+    $('#loading').hide();
+    $('#splash').show();
+
+    $('#start-game').click(startGame);
+    $('#instructions').click(showInstructions);
+  });
+ });

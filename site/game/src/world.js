@@ -5,6 +5,7 @@ var Player = require('./player');
 var Level = require('./level');
 var Controller = require('./controller');
 var Scroller = require('./layerscroller');
+var StoryTeller = require('./storyteller');
 
 return function() {
   Entity.call(this);
@@ -15,6 +16,7 @@ return function() {
   ,   player = null
   ,   controls = null
   ,   scroller = null
+  ,   story = null
   ;
 
   self.id = function() { return 'world'; }
@@ -22,9 +24,7 @@ return function() {
   self.loadLevel = function(path) {
     loadedLevel = new Level('main');
     scene.addEntity(loadedLevel);
-    addPlayer();
-    addControls();
-    addScroller();
+    loadedLevel.on('loaded', onLevelLoaded);
   };
 
   self.unloadLevel = function() {
@@ -35,6 +35,15 @@ return function() {
     removePlayer();    
     removeControls();
     removeScroller();
+    removeStoryTeller();
+  };
+
+  var onLevelLoaded = function() {
+    addPlayer();
+    addControls();
+    addScroller();
+    addStoryTeller();
+    self.raise('ready');
   };
   
   var addPlayer = function() {
@@ -66,6 +75,16 @@ return function() {
   var removeScroller = function() {
     scene.removeEntity(scroller);
     scroller = null;
+  };
+
+  var addStoryTeller = function() {
+    story = new StoryTeller();
+    scene.addEntity(story);
+  };
+
+  var removeStoryTeller = function() {
+    scene.remoteEntity(story);
+    story = null;
   };
 
   var onAddedToScene = function(data) {

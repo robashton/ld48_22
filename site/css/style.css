@@ -2,3 +2,27 @@ body {
   background-color: #333;
   color: #EEE;
 }
+
+#messagebox {
+  position: absolute;
+  left: 100px;
+  top: 100px;
+  width: 400px;
+  height: 200px;
+  background-color: #000;
+  border: 1px solid #EEE;
+  display: none;
+}
+
+#messagebox-text {
+  margin-top: 20px;
+  margin-left: 20px;
+}
+
+#messagebox-accept {
+  position: absolute;
+  right: 20px;
+  bottom: 10px;
+  color: #8888FF;
+  cursor: pointer;
+}

@@ -24,7 +24,8 @@ return function() {
     var scene = driver.scene();  
    
     var world = new World();
-    scene.addEntity(world); 
+    world.on('ready', onWorldReady);
+    scene.addEntity(world);
     world.loadLevel('irrelevant');
   };
 
@@ -34,6 +35,10 @@ return function() {
 
   var onDriverStopped = function() {
   
+  };
+
+  var onWorldReady = function() {
+    self.raise('ready');
   };
 
   driver.on('started', onDriverStarted);

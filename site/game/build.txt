@@ -28,6 +28,8 @@ src/player.js
 src/level.js
 src/controller.js
 src/layerscroller.js
+src/messagedisplay.js
+src/storyteller.js
 src/world.js
 src/game.js
 app.js
