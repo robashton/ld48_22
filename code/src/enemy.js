@@ -62,16 +62,34 @@ return function(id, imagePath, x , y , depth,  width, height) {
   var adjustTowardsEntity = function(entity) {
     var otherBounds = entity.bounds();
 
-    difference[0] =  otherBounds.x - position[0];
+    difference[0] = otherBounds.x - position[0];
     difference[1] = otherBounds.y - position[1];
 
     var distance = vec3.length(difference);
-    if(distance < 200) {
+    if(distance < 400) {
       vec3.normalize(difference);
-      velocity[0] = difference[0] * speed;
-      velocity[1] = difference[1] * speed;
+      if(canSeePlayer(difference, distance)) {
+        velocity[0] = difference[0] * speed;
+        velocity[1] = difference[1] * speed;
+      } else
+      {
+        velocity[1] += (Math.random() * 0.2) - 0.1;
+        velocity[1] *= 0.99;
+      }
     }
   }; 
+
+  var canSeePlayer = function(direction, distance) {
+    var level = scene.getEntity('current-level');
+
+    for(var i = 0.0; i < distance; i += 10.0) {
+      var x = position[0] + direction[0] * i;
+      var y = position[1] + direction[1] * i;
+      if(level.isPointInWall(x, y))
+        return false;
+    } 
+    return true;
+  };
 
   var addRenderable = function() {
     var material = new Material(255,255,255);

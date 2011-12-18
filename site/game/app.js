@@ -1949,21 +1949,21 @@ return function() {
     addMessageDisplay();
     addSmashyManToScene();
 
-/*
+
     player = scene.getEntity('player');
     player.notifyHasGun();
     player.armGun();
     player.setPosition(800, 30);
     addEnemiesToScene();
     removeEntity('energy_barrier');
-*/
+/*
     showMessage("I have been in this room since I can remember", PLAYER_AVATAR );
     showMessage("I am fed, I have somewhere to sleep and it is warm", PLAYER_AVATAR );
     showMessage("There is no exit, this is all I know", PLAYER_AVATAR );
     showMessage("I am... alone");
     onMessagesFinished(function() {
       setTimeout(addRabbitToScene, 2000);
-    }); 
+    });  */
   };
 
   var rabbit = null;
@@ -2382,6 +2382,8 @@ return function(depth, maxBullets) {
   };
 
   var updateBullets = function() {
+    var level = scene.getEntity('current-level');
+
     for(var i = 0 ; i < maxBullets; i++) {
       var bullet = bullets[i];
       if(!bullet.active) continue;
@@ -2391,6 +2393,11 @@ return function(depth, maxBullets) {
       }
       bullet.x += bullet.velx;
       bullet.y += bullet.vely;
+
+      if(level.isPointInWall(bullet.x, bullet.y)) {
+        bullet.active = false;
+        continue;
+      }
     
       scene.each(function(entity) {
         if(!entity.bounds) return;
@@ -2548,16 +2555,34 @@ return function(id, imagePath, x , y , depth,  width, height) {
   var adjustTowardsEntity = function(entity) {
     var otherBounds = entity.bounds();
 
-    difference[0] =  otherBounds.x - position[0];
+    difference[0] = otherBounds.x - position[0];
     difference[1] = otherBounds.y - position[1];
 
     var distance = vec3.length(difference);
-    if(distance < 200) {
+    if(distance < 400) {
       vec3.normalize(difference);
-      velocity[0] = difference[0] * speed;
-      velocity[1] = difference[1] * speed;
+      if(canSeePlayer(difference, distance)) {
+        velocity[0] = difference[0] * speed;
+        velocity[1] = difference[1] * speed;
+      } else
+      {
+        velocity[1] += (Math.random() * 0.2) - 0.1;
+        velocity[1] *= 0.99;
+      }
     }
   }; 
+
+  var canSeePlayer = function(direction, distance) {
+    var level = scene.getEntity('current-level');
+
+    for(var i = 0.0; i < distance; i += 10.0) {
+      var x = position[0] + direction[0] * i;
+      var y = position[1] + direction[1] * i;
+      if(level.isPointInWall(x, y))
+        return false;
+    } 
+    return true;
+  };
 
   var addRenderable = function() {
     var material = new Material(255,255,255);

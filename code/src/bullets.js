@@ -32,6 +32,8 @@ return function(depth, maxBullets) {
   };
 
   var updateBullets = function() {
+    var level = scene.getEntity('current-level');
+
     for(var i = 0 ; i < maxBullets; i++) {
       var bullet = bullets[i];
       if(!bullet.active) continue;
@@ -41,6 +43,11 @@ return function(depth, maxBullets) {
       }
       bullet.x += bullet.velx;
       bullet.y += bullet.vely;
+
+      if(level.isPointInWall(bullet.x, bullet.y)) {
+        bullet.active = false;
+        continue;
+      }
     
       scene.each(function(entity) {
         if(!entity.bounds) return;
