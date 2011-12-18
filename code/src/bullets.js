@@ -133,6 +133,7 @@ return function(depth, maxBullets) {
         started: 0
       });
     };
+  bulletMaterial.setImage(scene.resources.get('img/bullet.png'));
   };
 
   self.on('addedToScene', onAddedToScene); 

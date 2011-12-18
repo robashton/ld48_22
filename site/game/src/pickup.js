@@ -4,7 +4,7 @@ var Entity = require('../libs/layers/scene/entity');
 var Renderable = require('../libs/layers/render/renderable')
 var Material = require('../libs/layers/render/material');  
 
-return function(id, texture, x,y, z, width, height) {
+return function(id, texture, x, y, z, width, height) {
   Entity.call(this);
 
   var self = this
@@ -50,7 +50,7 @@ return function(id, texture, x,y, z, width, height) {
   var addRenderable = function() {
     var material = new Material(255,255,255);
     material.setImage(scene.resources.get(texture));
-    var renderable = new Renderable( x, y, width, height, material);
+    renderable = new Renderable( x, y, width, height, material);
     layer.addRenderable(renderable);
   };
 

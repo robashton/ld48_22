@@ -7,8 +7,9 @@ return function() {
 
   var self = this;
 
-  self.setMessage = function(text) {
+  self.setMessage = function(text, avatar) {
     $('#messagebox').fadeIn("slow");
+    $('#messagebox-avatar').attr('src', avatar);
     $('#messagebox-text').text(text);
   };
  

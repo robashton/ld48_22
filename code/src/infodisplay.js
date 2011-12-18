@@ -16,16 +16,32 @@ return function() {
     $('#infobox').fadeIn("fast");
     setTimeout(function() {
       $('#infobox').fadeOut("show");
-    }, 1000);
+    }, 3000);
   };
 
   var onCheckpointReached = function() {
     showInfo("Checkpoint reached");
   };
 
+  var onArrowKeysNeeded = function() {
+    showInfo("Use the ARROW KEYS to move around");
+  };
+
+  var onJumpKeysNeeded = function() {
+    showInfo("Use the SPACEBAR to jump");
+  };
+  
+
+  var onGunKeysNeeded = function() {
+    showInfo("Use 'X' to shoot the gun");
+  };  
+
   var onAddedToScene = function(data) {
     scene = data.scene;
     scene.on('checkpoint-reached', onCheckpointReached);
+    scene.on('arrow-keys-needed', onArrowKeysNeeded);
+    scene.on('jump-keys-needed', onJumpKeysNeeded);
+    scene.on('gun-keys-needed', onGunKeysNeeded);
   };
 
   self.on('addedToScene', onAddedToScene);

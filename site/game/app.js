@@ -1086,7 +1086,7 @@ var Entity = require('../libs/layers/scene/entity');
 var Renderable = require('../libs/layers/render/renderable')
 var Material = require('../libs/layers/render/material');  
 
-return function(id, texture, x,y, z, width, height) {
+return function(id, texture, x, y, z, width, height) {
   Entity.call(this);
 
   var self = this
@@ -1132,7 +1132,7 @@ return function(id, texture, x,y, z, width, height) {
   var addRenderable = function() {
     var material = new Material(255,255,255);
     material.setImage(scene.resources.get(texture));
-    var renderable = new Renderable( x, y, width, height, material);
+    renderable = new Renderable( x, y, width, height, material);
     layer.addRenderable(renderable);
   };
 
@@ -1558,8 +1558,9 @@ return function() {
 
   var self = this;
 
-  self.setMessage = function(text) {
+  self.setMessage = function(text, avatar) {
     $('#messagebox').fadeIn("slow");
+    $('#messagebox-avatar').attr('src', avatar);
     $('#messagebox-text').text(text);
   };
  
@@ -2084,10 +2085,10 @@ var Npc = require('./npc');
 var Demon = require('./demon');
 var Player = require('./player');
 
-var PLAYER_AVATAR = "img/playeravatar.png";
-var RABBIT_AVATAR = "img/rabbitavatar.png";
-var SMASHY_AVATAR = "img/smashyavatar.png";
-var WIZARD_AVATAR = "img/wizardavatar.png";
+var PLAYER_AVATAR = "img/player.png";
+var RABBIT_AVATAR = "img/rabbit.png";
+var SMASHY_AVATAR = "img/smashyman.png";
+var WIZARD_AVATAR = "img/wizard.png";
 
 return function() {
   Entity.call(this);
@@ -2123,14 +2124,14 @@ return function() {
 
   var onWorldReady = function() {
     addMessageDisplay();
-    startGame(); /*
+    startGame();  /*
     playerHasGun = true;
     playerHasArmedGun = true;
     player.notifyHasGun();
-    player.armGun();
-    player.setPosition(790, 1139);
-    addEnemiesToScene();
-    whenPlayerReaches(scene.getEntity('final_barrier'), tellPlayerToFightDemon); */
+    player.armGun(); */
+  //  player.setPosition(675, 53); 
+  //  addEnemiesToScene();
+ //   whenPlayerReaches(scene.getEntity('final_barrier'), tellPlayerToFightDemon); */
   };
 
   var startGame = function(laughAtPunyHuman) {
@@ -2174,13 +2175,14 @@ return function() {
     onMessagesFinished(moveRabbitToFirstLever);
   };
 
-  var moveRabbitToFirstLever = function() {
+  var moveRabbitToFirstLever = function() { 
     moveEntityTo(rabbit, 40, 118, openCellDoor);
   };
 
   var openCellDoor = function() {
     removeEntity("first_door");
     updateEntityState("first_lever", "open");
+    self.raise('arrow-keys-needed');
     whenPlayerReaches(rabbit, tellHimAboutThePlan);
   };  
 
@@ -2213,6 +2215,7 @@ return function() {
   var pullLeverForFirstBox = function() {
     updateEntityState("second_lever", "open");
     addFirstBoxToScene();
+    self.raise('jump-keys-needed');
     whenPlayerReaches(rabbit, rabbitAcknowledgeSmashyMan);
   };
 
@@ -2259,7 +2262,7 @@ return function() {
   var onGunPickedUp = function() {
     if(playerHasGun) return;
     playerHasGun = true;
-    showMessage("Ooh, careful with that - it's a laser mega blaster 9000?", RABBIT_AVATAR);
+    showMessage("Ooh, careful with that - it's a laser mega blaster 9000!!", RABBIT_AVATAR);
     showMessage("ME SMASH YOU SHOOT, LETS GO", SMASHY_AVATAR);
     showMessage("Okay, let's get out of here", PLAYER_AVATAR);
     onMessagesFinished(moveNpcsToEnergyBarrier);
@@ -2282,10 +2285,7 @@ return function() {
 
   var wizard = null;
   var spawnWizardBehindBarrier = function() {
-    wizard = new Npc("wizard", 8.0);
-    wizard.setPosition(990, 40);
-    wizard.setTexture('img/wizard.png');
-    scene.addEntity(wizard);
+    wizardAppear(990, 40);
     setTimeout(tellPlayersAboutEvilPlan, 1000);
   };
 
@@ -2302,6 +2302,7 @@ return function() {
   };
 
   var letPlayerDecideWhatherToContinue = function() {
+    self.raise('gun-keys-needed');
     scene.withEntity('player', function(player) {
       player.armGun();
       playerHasArmedGun = true;
@@ -2334,17 +2335,13 @@ return function() {
 
   var takeDownBarrier = function() {  
     removeEntity('energy_barrier');
-    scene.removeEntity(wizard);
-    wizard = null;
+    wizardVanish();
     addEnemiesToScene();
     whenPlayerReaches(scene.getEntity('final_barrier'), spawnWizardAgainToTellPlayerToFightDemon);
   };
 
   var spawnWizardAgainToTellPlayerToFightDemon = function() {
-    wizard = new Npc("wizard", 8.0);
-    wizard.setPosition(1190, 1060);
-    wizard.setTexture('img/wizard.png');
-    scene.addEntity(wizard);
+    wizardAppear(1190, 1060);
     setTimeout(tellPlayerToFightDemon, 1000);
   };
 
@@ -2359,17 +2356,13 @@ return function() {
     demon.setPosition(1053, 1030);
     scene.addEntity(demon);
     demon.on('killed', spawnWizardToCongratulate);
-    scene.removeEntity(wizard);
-    wizard = null;
+    wizardVanish();
   };
 
   var spawnWizardToCongratulate = function() {
     scene.removeEntity(demon);
     demon = null;
-    wizard = new Npc("wizard", 8.0);
-    wizard.setPosition(1190, 1060);
-    wizard.setTexture('img/wizard.png');
-    scene.addEntity(wizard);
+    wizardAppear(1190, 1060);
     setTimeout(congratulatePlayerOnKillingDemon, 1000);
   };
 
@@ -2450,6 +2443,28 @@ return function() {
   var removePlayer = function() {
     scene.removeEntity(player);
     player = null;
+  };
+
+  var wizardAppear = function(x, y) {
+    wizard = new Npc("wizard", 8.0);
+    wizard.setPosition(x, y);
+    wizard.setTexture('img/wizard.png');
+    scene.addEntity(wizard);
+    var bounds = wizard.bounds();
+    self.raise('wizard-appeared', {
+      x: bounds.x + bounds.width / 2.0,
+      y: bounds.y + bounds.height / 2.0
+    });
+  };
+
+  var wizardVanish = function() {
+    scene.removeEntity(wizard);
+    var bounds = wizard.bounds();
+    self.raise('wizard-vanished', {
+      x: bounds.x + bounds.width / 2.0,
+      y: bounds.y + bounds.height / 2.0
+    });
+    wizard = null;
   };
 
   var removeEnemiesFromScene = function() {
@@ -2548,8 +2563,8 @@ return function() {
     messageDisplay.on('messageclosed', onMessageClosed);
   };
 
-  var showMessage = function(text) {
-    messages.push({text: text});
+  var showMessage = function(text, avatar) {
+    messages.push({text: text, avatar: avatar});
     tryShowNextMessage();
   };
 
@@ -2558,7 +2573,7 @@ return function() {
     if(messages.length === 0) return;
 
     currentMessage = messages.shift();
-    messageDisplay.setMessage(currentMessage.text);
+    messageDisplay.setMessage(currentMessage.text, currentMessage.avatar);
   };
 
   var onMessageClosed = function() {
@@ -2803,6 +2818,7 @@ return function(depth, maxBullets) {
         started: 0
       });
     };
+  bulletMaterial.setImage(scene.resources.get('img/bullet.png'));
   };
 
   self.on('addedToScene', onAddedToScene); 
@@ -3158,16 +3174,32 @@ return function() {
     $('#infobox').fadeIn("fast");
     setTimeout(function() {
       $('#infobox').fadeOut("show");
-    }, 1000);
+    }, 3000);
   };
 
   var onCheckpointReached = function() {
     showInfo("Checkpoint reached");
   };
 
+  var onArrowKeysNeeded = function() {
+    showInfo("Use the ARROW KEYS to move around");
+  };
+
+  var onJumpKeysNeeded = function() {
+    showInfo("Use the SPACEBAR to jump");
+  };
+  
+
+  var onGunKeysNeeded = function() {
+    showInfo("Use 'X' to shoot the gun");
+  };  
+
   var onAddedToScene = function(data) {
     scene = data.scene;
     scene.on('checkpoint-reached', onCheckpointReached);
+    scene.on('arrow-keys-needed', onArrowKeysNeeded);
+    scene.on('jump-keys-needed', onJumpKeysNeeded);
+    scene.on('gun-keys-needed', onGunKeysNeeded);
   };
 
   self.on('addedToScene', onAddedToScene);
@@ -3324,6 +3356,38 @@ return function() {
 
   var hookSceneEvents = function() {
     scene.on('enemy-killed', onEnemyKilled);
+    scene.on('wizard-vanished', onWizardVanished);
+    scene.on('wizard-appeared', onWizardAppeared);
+    scene.on('collected', onPowerupCollected);
+  };
+
+  var onPowerupCollected = function(data) {
+    var pickup = data.pickup;
+    var bounds = pickup.bounds();
+    self.raise('particles-emitted', {
+      x: bounds.x + bounds.width / 2.0,
+      y: bounds.y + bounds.height / 2.0,
+      z: 8.0,
+      id: 'powerup-collected'    
+    });   
+  };
+
+  var onWizardAppeared = function(data) {
+    self.raise('particles-emitted', {
+      x: data.x,
+      y: data.y,
+      z: 8.0,
+      id: 'wizard-magic'
+    });
+  };
+
+  var onWizardVanished = function(data) {
+    self.raise('particles-emitted', {
+      x: data.x,
+      y: data.y,
+      z: 8.0,
+      id: 'wizard-magic'
+    });
   };
 
   var onEnemyKilled = function(data) {
@@ -3347,9 +3411,27 @@ return function() {
           material: new Material(255,255,255),
           width: 5,
           height: 5
+        },
+        'wizard-magic': {
+          burst: 15,
+          maxCount: 15,
+          material: new Material(255,255,255),
+          width: 15,
+          height: 15
+        },
+        'powerup-collected': {
+          burst: 15,
+          maxCount: 15,
+          material: new Material(255,255,255),
+          width: 15,
+          height: 15
         }
       }
     };
+
+    config.types['enemy-killed'].material.setImage(scene.resources.get('img/enemyparticle.png'));
+    config.types['wizard-magic'].material.setImage(scene.resources.get('img/wizardmagic.png'));
+    config.types['powerup-collected'].material.setImage(scene.resources.get('img/powerupglow.png'));
     particleEngine = new Particles(8.0, config);
     scene.addEntity(particleEngine);
   };
