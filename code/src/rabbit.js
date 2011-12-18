@@ -7,7 +7,8 @@ return function(depth) {
   var self = this;
 
   self.setJumpHeight(-5.0);
-  self.setSolidity(true); 
+  self.setSolidity(true);
+  self.setTexture('img/rabbit.png');
 
   self.notifyBulletHit = function() {
     self.raise('killed');

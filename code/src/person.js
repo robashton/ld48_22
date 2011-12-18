@@ -21,7 +21,8 @@ return function(id, depth) {
   ,   jumpHeight = -4.0
   ,   issolid = true
   ,   hasPhysics = true
-  ,   physicsAdjust = vec3.create([0,0,0]);
+  ,   physicsAdjust = vec3.create([0,0,0])
+  ,   imagePath = 'img/player.png'
   ;
 
   self.id = function() { return id; }
@@ -70,6 +71,14 @@ return function(id, depth) {
       removeRenderable();
       addRenderable();
     };
+  };
+
+  self.setTexture = function(path) {
+    imagePath = path;
+    if(renderable) {
+      removeRenderable();
+      addRenderable();
+    }
   };
   
   self.getPosition = function() {
@@ -186,7 +195,7 @@ return function(id, depth) {
 
   var addRenderable = function() {
     var material = new Material(255,255,255);
-    var texture = scene.resources.get('img/player.png');
+    var texture = scene.resources.get(imagePath);
     material.setImage(texture);
     renderable = new Renderable(0,0, width, height, material);
     layer.addRenderable(renderable);

@@ -11,6 +11,8 @@ return function(depth) {
   ,   ticks = 0
   ;
 
+
+
   self.notifyBulletHit = function() {
    health--;
    self.raise('health-changed', {
@@ -56,6 +58,7 @@ return function(depth) {
 
   self.setDimensions(64, 64);
   self.setPhysics(false);
+  self.setTexture('img/demon.png');
   self.on('reached-destination', chooseDestination);
 
   chooseDestination();

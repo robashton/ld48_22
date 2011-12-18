@@ -48,20 +48,20 @@ return function() {
 
   var onWorldReady = function() {
     addMessageDisplay();
-    startGame();
+    startGame(); /*
     playerHasGun = true;
     playerHasArmedGun = true;
     player.notifyHasGun();
     player.armGun();
     player.setPosition(790, 1139);
     addEnemiesToScene();
-    whenPlayerReaches(scene.getEntity('final_barrier'), tellPlayerToFightDemon);
+    whenPlayerReaches(scene.getEntity('final_barrier'), tellPlayerToFightDemon); */
   };
 
   var startGame = function(laughAtPunyHuman) {
     addSmashyManToScene();
     addPlayer();
-/*
+
     if(laughAtPunyHuman) {
       showMessage("HAhahaah, if only it were so easy, back in your cage mortal.", WIZARD_AVATAR );
     } else { 
@@ -73,7 +73,7 @@ return function() {
 
     onMessagesFinished(function() {
       setTimeout(addRabbitToScene, 2000);
-    });  */
+    });  
   };
 
   var rabbit = null;
@@ -88,6 +88,7 @@ return function() {
   var addSmashyManToScene = function() {
     smashyMan = new SmashyMan(8.0);
     smashyMan.setPosition(310, 110);
+    smashyMan.setTexture('img/smashyman.png');
     scene.addEntity(smashyMan);
   };
 
@@ -208,6 +209,7 @@ return function() {
   var spawnWizardBehindBarrier = function() {
     wizard = new Npc("wizard", 8.0);
     wizard.setPosition(990, 40);
+    wizard.setTexture('img/wizard.png');
     scene.addEntity(wizard);
     setTimeout(tellPlayersAboutEvilPlan, 1000);
   };
@@ -265,7 +267,8 @@ return function() {
 
   var spawnWizardAgainToTellPlayerToFightDemon = function() {
     wizard = new Npc("wizard", 8.0);
-    wizard.setPosition(1990, 1060);
+    wizard.setPosition(1190, 1060);
+    wizard.setTexture('img/wizard.png');
     scene.addEntity(wizard);
     setTimeout(tellPlayerToFightDemon, 1000);
   };
@@ -289,7 +292,8 @@ return function() {
     scene.removeEntity(demon);
     demon = null;
     wizard = new Npc("wizard", 8.0);
-    wizard.setPosition(1990, 1060);
+    wizard.setPosition(1190, 1060);
+    wizard.setTexture('img/wizard.png');
     scene.addEntity(wizard);
     setTimeout(congratulatePlayerOnKillingDemon, 1000);
   };
