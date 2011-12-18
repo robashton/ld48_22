@@ -28,18 +28,27 @@ return function() {
   ,   player = null
   ,   playerHasGun = false
   ,   playerHasArmedGun = false
+  ,   lastCheckpoint = 0
+  ,   checkpoints = [
+        [20, 20],
+        [1513, 67],
+        [97, 272],
+        [1253, 553],
+        [165, 562 ],
+        [86, 1149]
+  ]
   ;
 
   self.id = function() { return 'storyteller' };
   self.tick = function() {
     for(var i in currentHooks)
       currentHooks[i]();
+    checkIfPlayerIsAtNextCheckpoint();
   };
 
   var onWorldReady = function() {
     addMessageDisplay();
     startGame();
-    
     playerHasGun = true;
     playerHasArmedGun = true;
     player.notifyHasGun();
@@ -52,20 +61,19 @@ return function() {
   var startGame = function(laughAtPunyHuman) {
     addSmashyManToScene();
     addPlayer();
-
+/*
     if(laughAtPunyHuman) {
       showMessage("HAhahaah, if only it were so easy, back in your cage mortal.", WIZARD_AVATAR );
-    } else { /*
+    } else { 
       showMessage("I have been in this room since I can remember", PLAYER_AVATAR );
       showMessage("I am fed, I have somewhere to sleep and it is warm", PLAYER_AVATAR );
       showMessage("There is no exit, this is all I know", PLAYER_AVATAR );
-      showMessage("I am... alone"); */
+      showMessage("I am... alone"); 
     }
-/*
+
     onMessagesFinished(function() {
       setTimeout(addRabbitToScene, 2000);
     });  */
-
   };
 
   var rabbit = null;
@@ -327,6 +335,7 @@ return function() {
     removeEntity('first_box');
     removeEntity('second_box');
     currentHooks = {};
+    lastCheckpoint = 0;
   };
 
   var addPlayer = function() {
@@ -356,7 +365,7 @@ return function() {
     if(playerHasArmedGun) 
       player.armGun();
 
-    player.setPosition(109, 1128);
+    player.setPosition(checkpoints[lastCheckpoint][0], checkpoints[lastCheckpoint][1]);
   };
 
   var removePlayer = function() {
@@ -400,6 +409,21 @@ return function() {
       delete currentHooks["player_reached_target"];
       callback();
     };
+  };
+  
+  var checkIfPlayerIsAtNextCheckpoint = function() {
+    if(lastCheckpoint === checkpoints.length-1) return;
+    if(!player) return;
+    var bounds = player.bounds();
+    var playerPoint = vec3.create([bounds.x + bounds.width / 2.0, bounds.y + bounds.height / 2.0, 0]);
+    var checkPoint = vec3.create([checkpoints[lastCheckpoint+1][0],checkpoints[lastCheckpoint+1][1] , 0]);
+    vec3.subtract(checkPoint, playerPoint);
+    var distance = vec3.length(checkPoint);
+
+    if(distance < 100) {
+      self.raise('checkpoint-reached');
+      lastCheckpoint += 1;
+    }    
   };
 
   var distanceBetweenEntities = function(one, two) {

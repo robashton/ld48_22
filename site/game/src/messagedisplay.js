@@ -2,7 +2,6 @@ define(function(require) {
 
 var Eventable = require('../libs/layers/shared/eventable');
 
-// In case you're wondering.. BREAKFAST #2
 return function() {
   Eventable.call(this);
 

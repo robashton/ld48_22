@@ -4,6 +4,8 @@ var Driver = require('../libs/layers/driver');
 var Eventable = require('../libs/layers/shared/eventable');
 var World = require('./world');
 var PickupController = require('./pickupcontroller');
+var InfoDisplay = require('./infodisplay');
+var ParticleEmitter = require('./particleemitter');
 
 return function() {
   Eventable.call(this); 
@@ -11,6 +13,8 @@ return function() {
   var self = this
   ,   driver = new Driver()
   ,   pickupController = null
+  ,   infoDisplay = null
+  ,   particleeEmitter = null
   ;
 
   self.start = function() {
@@ -30,6 +34,10 @@ return function() {
     scene.addEntity(world);
     world.loadLevel('irrelevant');
     pickupController = new PickupController(scene);
+    infoDisplay = new InfoDisplay();
+    scene.addEntity(infoDisplay);
+    particleEmitter = new ParticleEmitter();
+    scene.addEntity(particleEmitter);
   };
 
   var onDriverStarted = function() {

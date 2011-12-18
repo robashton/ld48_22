@@ -1553,7 +1553,6 @@ define('src/messagedisplay',['require','../libs/layers/shared/eventable'],functi
 
 var Eventable = require('../libs/layers/shared/eventable');
 
-// In case you're wondering.. BREAKFAST #2
 return function() {
   Eventable.call(this);
 
@@ -2090,18 +2089,27 @@ return function() {
   ,   player = null
   ,   playerHasGun = false
   ,   playerHasArmedGun = false
+  ,   lastCheckpoint = 0
+  ,   checkpoints = [
+        [20, 20],
+        [1513, 67],
+        [97, 272],
+        [1253, 553],
+        [165, 562 ],
+        [86, 1149]
+  ]
   ;
 
   self.id = function() { return 'storyteller' };
   self.tick = function() {
     for(var i in currentHooks)
       currentHooks[i]();
+    checkIfPlayerIsAtNextCheckpoint();
   };
 
   var onWorldReady = function() {
     addMessageDisplay();
     startGame();
-    
     playerHasGun = true;
     playerHasArmedGun = true;
     player.notifyHasGun();
@@ -2114,20 +2122,19 @@ return function() {
   var startGame = function(laughAtPunyHuman) {
     addSmashyManToScene();
     addPlayer();
-
+/*
     if(laughAtPunyHuman) {
       showMessage("HAhahaah, if only it were so easy, back in your cage mortal.", WIZARD_AVATAR );
-    } else { /*
+    } else { 
       showMessage("I have been in this room since I can remember", PLAYER_AVATAR );
       showMessage("I am fed, I have somewhere to sleep and it is warm", PLAYER_AVATAR );
       showMessage("There is no exit, this is all I know", PLAYER_AVATAR );
-      showMessage("I am... alone"); */
+      showMessage("I am... alone"); 
     }
-/*
+
     onMessagesFinished(function() {
       setTimeout(addRabbitToScene, 2000);
     });  */
-
   };
 
   var rabbit = null;
@@ -2389,6 +2396,7 @@ return function() {
     removeEntity('first_box');
     removeEntity('second_box');
     currentHooks = {};
+    lastCheckpoint = 0;
   };
 
   var addPlayer = function() {
@@ -2418,7 +2426,7 @@ return function() {
     if(playerHasArmedGun) 
       player.armGun();
 
-    player.setPosition(109, 1128);
+    player.setPosition(checkpoints[lastCheckpoint][0], checkpoints[lastCheckpoint][1]);
   };
 
   var removePlayer = function() {
@@ -2462,6 +2470,21 @@ return function() {
       delete currentHooks["player_reached_target"];
       callback();
     };
+  };
+  
+  var checkIfPlayerIsAtNextCheckpoint = function() {
+    if(lastCheckpoint === checkpoints.length-1) return;
+    if(!player) return;
+    var bounds = player.bounds();
+    var playerPoint = vec3.create([bounds.x + bounds.width / 2.0, bounds.y + bounds.height / 2.0, 0]);
+    var checkPoint = vec3.create([checkpoints[lastCheckpoint+1][0],checkpoints[lastCheckpoint+1][1] , 0]);
+    vec3.subtract(checkPoint, playerPoint);
+    var distance = vec3.length(checkPoint);
+
+    if(distance < 100) {
+      self.raise('checkpoint-reached');
+      lastCheckpoint += 1;
+    }    
   };
 
   var distanceBetweenEntities = function(one, two) {
@@ -3099,12 +3122,242 @@ return function(scene) {
 
 });
 
-define('src/game',['require','../libs/layers/driver','../libs/layers/shared/eventable','./world','./pickupcontroller'],function(require) {
+define('src/infodisplay',['require','../libs/layers/scene/entity'],function(require) {
+
+var Entity = require('../libs/layers/scene/entity');
+
+return function() {
+  Entity.call(this);
+
+  var self = this
+      scene = null  
+  ;
+
+  self.id = function() { return 'info-display'; }
+
+  var showInfo = function(info) {
+    $('#infobox-text').text(info);
+    $('#infobox').fadeIn("fast");
+    setTimeout(function() {
+      $('#infobox').fadeOut("show");
+    }, 1000);
+  };
+
+  var onCheckpointReached = function() {
+    showInfo("Checkpoint reached");
+  };
+
+  var onAddedToScene = function(data) {
+    scene = data.scene;
+    scene.on('checkpoint-reached', onCheckpointReached);
+  };
+
+  self.on('addedToScene', onAddedToScene);
+
+};
+
+});
+
+define('libs/layers/components/particles',['../scene/entity'], function(Entity) {
+ return function(depth, config) {
+    Entity.call(this); var self = this;
+
+    var scene = null;
+    var time = 0;
+    var particles = {};
+    var layer = null;
+
+    self.id = function() { return "particle-system-" + depth; }
+
+    self.tick = function() {  
+      time++;
+      updateParticles();
+    };
+
+    self.setLayer = function(nlayer) {
+      layer = nlayer;
+    };
+
+    self.render = function(context) {
+      for(var type in particles)
+        renderParticlesForType(context, type, particles[type]);
+    };
+
+    var renderParticlesForType = function(context, type, system) {
+      for(var i = 0; i < system.items.length; i++) {
+        var item = system.items[i];
+        if(!item.exists) continue;
+        context.fillRect(item.x, item.y, layer.getDepth(), 0, item.width, item.height, system.material);     
+      }
+    };
+
+    var updateParticles = function() {
+      for(var type in particles) {
+        updateParticlesForType(type, particles[type]);
+      };
+    };
+
+    var updateParticlesForType = function(type, system) {
+      for(var i = 0; i < system.items.length; i++) {
+        var item = system.items[i];
+        if(!item.exists) continue;
+
+        if(time - item.firedAt > system.lifetime) {
+          item.exists = false;      
+          continue;
+        }
+
+        item.x += item.velx;
+        item.y += item.vely;
+      }
+    };
+
+    var onParticlesEmitted = function(data) {
+      if(data.z !== depth) return;
+      var system = particles[data.id];
+      if(system) {
+        fireParticles(system, data);
+      } else console.warn('Particle system required that does not exist: ' + data.id);
+    }; 
+
+    var fireParticles = function(system, data) {
+      var desiredCount = data.burst || system.burst;
+      var createdCount = 0;
+      for(var i = 0; i < system.items.length; i++) {
+        var item = system.items[i];
+        if(item.exists) continue;
+        
+        item.exists = true;
+        item.x = data.x * layer.getRenderScaleFactor();
+        item.y = data.y * layer.getRenderScaleFactor();
+        item.velx = (Math.random() * system.velocity - (system.velocity / 2.0)) * layer.getRenderScaleFactor();
+        item.vely = (Math.random() * system.velocity - (system.velocity / 2.0)) * layer.getRenderScaleFactor();
+        item.width = system.width * layer.getRenderScaleFactor();
+        item.heght = system.height * layer.getRenderScaleFactor();
+        item.firedAt = time;   
+
+        createdCount++;
+        if(createdCount === desiredCount) return;
+      }
+    };
+
+    var createSystems = function() {
+      for(var type in config.types) {
+        createSystem(type, config.types[type]);
+      };
+    };
+
+    var createSystem = function(type, itemConfig) {
+      particles[type] = {
+        maxCount: itemConfig.maxCount || 15,
+        burst: itemConfig.burst || 5,
+        texture: itemConfig.texture || null,
+        width: itemConfig.width || 5,
+        height: itemConfig.width || 5,
+        lifetime: itemConfig.lifetime || 60,
+        velocity: itemConfig.velocity || 1.0,
+        material: itemConfig.material || new Material(255,255,255)
+      };
+      initializeSystem(particles[type]);
+    };
+
+    var initializeSystem = function(data) {
+      data.items = new Array(data.maxCount);
+      for(var i = 0; i < data.items.length; i++) {
+        data.items[i] = {
+          exists: false,
+          x: 0, y: 0,
+          velx: 0.0, vely: 0.0,
+          width: data.width, 
+          height: data.height
+        };
+      };
+    };
+
+    var onAddedToScene = function(data) {
+       scene = data.scene;
+       var layer = scene.getLayer(depth);
+       layer.addRenderable(self);
+       scene.on('particles-emitted', onParticlesEmitted);
+       createSystems();
+    };
+
+    self.on('addedToScene', onAddedToScene);
+  }; 
+});
+
+
+
+define('src/particleemitter',['require','../libs/layers/components/particles','../libs/layers/scene/entity','../libs/layers/render/material'],function(require) {
+
+var Particles = require('../libs/layers/components/particles');
+var Entity = require('../libs/layers/scene/entity');  
+var Material = require('../libs/layers/render/material');
+
+return function() {
+  Entity.call(this);
+
+  var self = this
+      scene = null
+      particleEngine = null
+  ;
+
+  self.id = function() { return 'particle-emitter'; }
+
+  var hookSceneEvents = function() {
+    scene.on('enemy-killed', onEnemyKilled);
+  };
+
+  var onEnemyKilled = function(data) {
+    var enemy = data.enemy;
+    var bounds = enemy.bounds();
+    self.raise('particles-emitted', {
+      x: bounds.x + bounds.width / 2.0,
+      y: bounds.y + bounds.height / 2.0,
+      z: 8.0,
+      id: 'enemy-killed'    
+    });    
+   };
+
+
+  var createParticleSystem = function() {
+    var config = {
+      types: {
+        'enemy-killed': {
+          burst: 15,
+          maxCount: 200,
+          material: new Material(255,255,255),
+          width: 5,
+          height: 5
+        }
+      }
+    };
+    particleEngine = new Particles(8.0, config);
+    scene.addEntity(particleEngine);
+  };
+
+
+
+  var onAddedToScene = function(data) {
+    scene = data.scene;
+    createParticleSystem();
+    hookSceneEvents();
+  };
+
+
+  self.on('addedToScene', onAddedToScene);
+};
+
+});
+
+define('src/game',['require','../libs/layers/driver','../libs/layers/shared/eventable','./world','./pickupcontroller','./infodisplay','./particleemitter'],function(require) {
 
 var Driver = require('../libs/layers/driver');
 var Eventable = require('../libs/layers/shared/eventable');
 var World = require('./world');
 var PickupController = require('./pickupcontroller');
+var InfoDisplay = require('./infodisplay');
+var ParticleEmitter = require('./particleemitter');
 
 return function() {
   Eventable.call(this); 
@@ -3112,6 +3365,8 @@ return function() {
   var self = this
   ,   driver = new Driver()
   ,   pickupController = null
+  ,   infoDisplay = null
+  ,   particleeEmitter = null
   ;
 
   self.start = function() {
@@ -3131,6 +3386,10 @@ return function() {
     scene.addEntity(world);
     world.loadLevel('irrelevant');
     pickupController = new PickupController(scene);
+    infoDisplay = new InfoDisplay();
+    scene.addEntity(infoDisplay);
+    particleEmitter = new ParticleEmitter();
+    scene.addEntity(particleEmitter);
   };
 
   var onDriverStarted = function() {

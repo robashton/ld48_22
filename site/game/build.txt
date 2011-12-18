@@ -43,5 +43,8 @@ src/enemy.js
 src/enemies.js
 src/world.js
 src/pickupcontroller.js
+src/infodisplay.js
+libs/layers/components/particles.js
+src/particleemitter.js
 src/game.js
 app.js

@@ -26,3 +26,18 @@ body {
   color: #8888FF;
   cursor: pointer;
 }
+
+#infobox {
+  background-color: transparent;
+  position: absolute;
+  left: 150px;
+  top: 200px;
+  width: 300px;
+  height: 100px;
+  display: none;
+}
+
+#infobox-text {
+  background-color: transparent;
+  color: #FFF;  
+}
