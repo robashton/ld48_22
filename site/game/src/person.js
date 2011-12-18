@@ -44,11 +44,13 @@ return function(id, depth) {
   self.moveLeft = function() {
     if(velocity[0] > -2.0)
       velocity[0] -= 1.0;
+    self.raise('turnLeft');
   };
 
   self.moveRight = function() {
     if(velocity[0] < 2.0)
       velocity[0] += 1.0;
+    self.raise('turnRight');
   };
 
   self.moveUp = function() {

@@ -1062,11 +1062,13 @@ return function(id, depth) {
   self.moveLeft = function() {
     if(velocity[0] > -2.0)
       velocity[0] -= 1.0;
+    self.raise('turnLeft');
   };
 
   self.moveRight = function() {
     if(velocity[0] < 2.0)
       velocity[0] += 1.0;
+    self.raise('turnRight');
   };
 
   self.moveUp = function() {
@@ -1175,8 +1177,9 @@ return function(depth) {
   Person.call(this, "player", depth);
 
   var self = this
-  ,   hasGun = false
-  ,   gunArmed = false
+  ,   hasGun = true
+  ,   gunArmed = true
+  ,   direction = "right"
   ;
 
   self.notifyHasGun = function() {
@@ -1185,11 +1188,18 @@ return function(depth) {
   };
 
   self.armGun = function() {
-    gunArmed = truel
+    gunArmed = true
   };
 
   self.fire = function() {
-
+    var bounds = self.bounds();    
+    self.raise('fired', {
+      sender: self.id(),
+      x: bounds.x,
+      y: bounds.y,
+      direction: direction,
+      size: 5
+    });
   };
 
   var onAddedToScene = function(data) {
@@ -1197,7 +1207,18 @@ return function(depth) {
     layer = scene.getLayer(depth);
   };
 
+  var onEntityTurnedLeft = function() {
+    direction = "left";
+  };  
+
+  var onEntityTurnedRight = function() {
+    direction = "right";
+  };
+    
+  
   self.on('addedToScene', onAddedToScene);
+  self.on('turnLeft', onEntityTurnedLeft);
+  self.on('turnRight', onEntityTurnedRight);
 };
 });
 
@@ -1572,6 +1593,7 @@ return function() {
   ,   impulseLeft = false
   ,   impulseRight = false
   ,   impulseUp = false
+  ,   firing = false
   ;
 
   self.id = function() { return 'controller'; }
@@ -1584,6 +1606,8 @@ return function() {
         player.moveRight();
       if(impulseUp)
         player.moveUp();
+      if(firing)
+        player.fire();
     });
   };
 
@@ -1598,6 +1622,9 @@ return function() {
       case 39:
         impulseRight = true;
         break;
+      case 88:
+        firing = true
+        break;
     }
   };
 
@@ -1611,6 +1638,9 @@ return function() {
         break;
       case 39:
         impulseRight = false;
+        break;
+      case 88:
+        firing = false;
         break;
     }
   };
@@ -2215,7 +2245,121 @@ return function() {
 
 });
 
-define('src/world',['require','../libs/layers/scene/entity','./player','./level','./controller','./layerscroller','./storyteller','./collision'],function(require) {
+define('src/bullets',['require','../libs/layers/scene/entity','../libs/layers/render/material'],function(require) {
+
+var Entity = require('../libs/layers/scene/entity');
+var Material = require('../libs/layers/render/material');
+
+return function(depth, maxBullets) {
+  Entity.call(this);
+
+  var self = this
+  ,   layer = null
+  ,   scene = null  
+  ,   bullets = []
+  ,   ticks = 0
+  ,   bulletMaterial = new Material(255,255,255)
+  ;
+
+  self.id = function() { return 'bullets'; }
+
+  self.tick = function() {
+    ticks++;
+    updateBullets();
+  };
+
+  self.setLayer = function(ignored) {};
+
+  self.render = function(context) {
+    for(var i = 0 ; i < maxBullets; i++) {
+      var bullet = bullets[i];
+      if(!bullet.active) continue;
+      context.fillRect(bullet.x, bullet.y, depth, 0, bullet.size, bullet.size, bulletMaterial);
+    }
+  };
+
+  var updateBullets = function() {
+    for(var i = 0 ; i < maxBullets; i++) {
+      var bullet = bullets[i];
+      if(!bullet.active) continue;
+      if(bullet.lifetime < (ticks - bullet.started)) {
+        bullet.active = false;
+        continue;
+      }
+      bullet.x += bullet.velx;
+      bullet.y += bullet.vely;
+    
+      // TODO: Collision detection        
+    }
+  };
+
+  var onEntityFired = function(data) {
+    addBulletToScene(data.x, data.y, data.sender, data.direction, data.size);
+  };
+
+  var addBulletToScene = function(x, y, sender, direction, size) {
+    for(var i = 0 ; i < maxBullets; i++) {
+      var bullet = bullets[i];
+      if(bullet.active) continue;
+
+      bullet.x = x;
+      bullet.y = y;
+      bullet.sender = sender;
+      bullet.size = size;
+      bullet.started = ticks;
+
+      switch(direction) {
+        case "left":
+          bullet.velx = -15.0;
+          bullet.vely = 0;
+          break;
+        case "right":
+          bullet.velx = 15.0;
+          bullet.vely = 0;
+          break;
+        case "down":
+          bullet.velx = 0;
+          bullet.vely = 15.0;
+          break;
+        default:
+          return;
+      }
+      bullet.active = true;
+      return;
+    }
+  };
+
+  var onAddedToScene = function(data) {
+    scene = data.scene;
+    layer = scene.getLayer(depth);
+    layer.addRenderable(self);
+    scene.on('fired', onEntityFired);
+    createInitialBullets();
+  };
+
+  var createInitialBullets = function() {
+    for(var i = 0 ; i < maxBullets; i++) {
+      bullets.push({
+        active: false,
+        id: i,
+        x: 0,
+        y: 0,
+        size: 0,
+        vely: 0,
+        velx: 0,
+        lifetime: 30,
+        started: 0
+      });
+    };
+  };
+
+  self.on('addedToScene', onAddedToScene); 
+
+};
+
+});
+
+define('src/world',['require','../libs/layers/scene/entity','./player','./level','./controller','./layerscroller','./storyteller','./collision','./bullets'],function(require) {
 
 var Entity = require('../libs/layers/scene/entity');
 var Player = require('./player');
@@ -2224,6 +2368,7 @@ var Controller = require('./controller');
 var Scroller = require('./layerscroller');
 var StoryTeller = require('./storyteller');
 var Collision = require('./collision');
+var Bullets = require('./bullets');
 
 return function() {
   Entity.call(this);
@@ -2236,6 +2381,7 @@ return function() {
   ,   scroller = null
   ,   story = null
   ,   collision = null
+  ,   bullets = null
   ;
 
   self.id = function() { return 'world'; }
@@ -2256,6 +2402,7 @@ return function() {
     removeScroller();
     removeStoryTeller();
     removeCollision();
+    removeBullets();
   };
 
   var onLevelLoaded = function() {
@@ -2264,6 +2411,7 @@ return function() {
     addScroller();
     addStoryTeller();
     addCollision();
+    addBullets();
     self.raise('ready');
   };
   
@@ -2318,6 +2466,16 @@ return function() {
     collision = null;
   };
 
+  var addBullets = function() {
+    bullets = new Bullets(8.0, 250);
+    scene.addEntity(bullets);
+  };
+
+  var removeBullets = function() {
+    scene.removeEntity(bullets);
+    bullets = null;
+  };
+
   var onAddedToScene = function(data) {
     scene = data.scene;
     scene.addLayer(8.0);
@@ -2355,7 +2513,7 @@ return function() {
 
   var self = this
   ,   driver = new Driver()
-  ,   pickupController = null;
+  ,   pickupController = null
   ;
 
   self.start = function() {

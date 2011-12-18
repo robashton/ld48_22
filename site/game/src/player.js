@@ -8,8 +8,9 @@ return function(depth) {
   Person.call(this, "player", depth);
 
   var self = this
-  ,   hasGun = false
-  ,   gunArmed = false
+  ,   hasGun = true
+  ,   gunArmed = true
+  ,   direction = "right"
   ;
 
   self.notifyHasGun = function() {
@@ -18,11 +19,18 @@ return function(depth) {
   };
 
   self.armGun = function() {
-    gunArmed = truel
+    gunArmed = true
   };
 
   self.fire = function() {
-
+    var bounds = self.bounds();    
+    self.raise('fired', {
+      sender: self.id(),
+      x: bounds.x,
+      y: bounds.y,
+      direction: direction,
+      size: 5
+    });
   };
 
   var onAddedToScene = function(data) {
@@ -30,6 +38,17 @@ return function(depth) {
     layer = scene.getLayer(depth);
   };
 
+  var onEntityTurnedLeft = function() {
+    direction = "left";
+  };  
+
+  var onEntityTurnedRight = function() {
+    direction = "right";
+  };
+    
+  
   self.on('addedToScene', onAddedToScene);
+  self.on('turnLeft', onEntityTurnedLeft);
+  self.on('turnRight', onEntityTurnedRight);
 };
 });

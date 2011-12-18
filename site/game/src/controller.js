@@ -11,6 +11,7 @@ return function() {
   ,   impulseLeft = false
   ,   impulseRight = false
   ,   impulseUp = false
+  ,   firing = false
   ;
 
   self.id = function() { return 'controller'; }
@@ -23,6 +24,8 @@ return function() {
         player.moveRight();
       if(impulseUp)
         player.moveUp();
+      if(firing)
+        player.fire();
     });
   };
 
@@ -37,6 +40,9 @@ return function() {
       case 39:
         impulseRight = true;
         break;
+      case 88:
+        firing = true
+        break;
     }
   };
 
@@ -50,6 +56,9 @@ return function() {
         break;
       case 39:
         impulseRight = false;
+        break;
+      case 88:
+        firing = false;
         break;
     }
   };

@@ -37,6 +37,7 @@ src/rabbit.js
 src/smashyman.js
 src/storyteller.js
 src/collision.js
+src/bullets.js
 src/world.js
 src/pickupcontroller.js
 src/game.js

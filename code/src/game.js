@@ -10,7 +10,7 @@ return function() {
 
   var self = this
   ,   driver = new Driver()
-  ,   pickupController = null;
+  ,   pickupController = null
   ;
 
   self.start = function() {
