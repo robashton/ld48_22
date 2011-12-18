@@ -1589,6 +1589,7 @@ return function(name) {
     scene.addEntity(entity);
 
     entity = new RenderEntity("energy_barrier", "img/energybarrier.png", 935, 30, 8.0, 15, 30);
+    entity.setSolidity(true);
     scene.addEntity(entity);
 
     self.raise('loaded');
@@ -1876,6 +1877,7 @@ return function() {
   ,   messageDisplay = null
   ,   currentWaiter = null
   ,   currentHooks = {}
+  ,   player = null
   ;
 
   self.id = function() { return 'storyteller' };
@@ -1887,13 +1889,19 @@ return function() {
   var onWorldReady = function() {
     addMessageDisplay();
     addSmashyManToScene();
+    player = scene.getEntity('player');
+
+    player.setPosition(800, 30);
+    addEnemiesToScene();
+    removeEntity('energy_barrier');
+    /*
     showMessage("I have been in this room since I can remember", PLAYER_AVATAR );
     showMessage("I am fed, I have somewhere to sleep and it is warm", PLAYER_AVATAR );
     showMessage("There is no exit, this is all I know", PLAYER_AVATAR );
     showMessage("I am... alone");
     onMessagesFinished(function() {
       setTimeout(addRabbitToScene, 2000);
-    });
+    }); */
   };
 
   var rabbit = null;
@@ -2076,6 +2084,13 @@ return function() {
     removeEntity('energy_barrier');
     scene.removeEntity(wizard);
     wizard = null;
+    addEnemiesToScene();
+  };
+
+  var addEnemiesToScene = function() {
+    scene.withEntity('enemies', function(enemies) {
+      enemies.generateEnemies();
+    });
   };
   
   var moveEntityTo = function(entity, x, y, callback) {
@@ -2403,7 +2418,170 @@ return function(depth, maxBullets) {
 
 });
 
-define('src/world',['require','../libs/layers/scene/entity','./player','./level','./controller','./layerscroller','./storyteller','./collision','./bullets'],function(require) {
+define('src/enemy',['require','../libs/layers/scene/entity','../libs/layers/render/material','../libs/layers/render/renderable'],function(require) {
+
+var Entity = require('../libs/layers/scene/entity');
+var Material = require('../libs/layers/render/material');
+var Renderable = require('../libs/layers/render/renderable');
+
+
+return function(id, imagePath, x , y , depth,  width, height) {
+  Entity.call(this);
+
+  var self = this
+  ,   scene = null
+  ,   layer = null
+  ,   renderable = null
+  ,   position = vec3.create([x,y,0])
+  ,   velocity = vec3.create([0,0,0])
+  ,   speed = 2
+  ;
+
+  self.id = function() { return id; }
+
+  self.tick = function() {
+    scene.withEntity('player', function(player) {
+      adjustTowardsEntity(player);
+    });
+    scene.withEntity('current-level', function(level) {
+       level.clip(position, velocity, width, height);
+    });
+    applyVelocity();
+    updateRenderable();
+  };
+
+  self.bounds = function() {
+    return {
+      x: position[0],
+      y: position[1],
+      width: width,
+      height: height
+    }
+  }
+
+  self.issolid = function() {
+    return false;
+  };
+
+  self.notifyBulletHit = function() {
+    self.raise('killed');
+  };
+
+  var applyVelocity = function() {
+    position[0] += velocity[0];
+    position[1] += velocity[1];
+  };  
+
+  var updateRenderable = function() {
+    renderable.position(position[0], position[1]);
+  };
+
+  var difference = vec3.create([0,0,0]);
+  var adjustTowardsEntity = function(entity) {
+    var otherBounds = entity.bounds();
+
+    difference[0] =  otherBounds.x - position[0];
+    difference[1] = otherBounds.y - position[1];
+
+    var distance = vec3.length(difference);
+    if(distance < 200) {
+      vec3.normalize(difference);
+      velocity[0] = difference[0] * speed;
+      velocity[1] = difference[1] * speed;
+    }
+  }; 
+
+  var addRenderable = function() {
+    var material = new Material(255,255,255);
+    var texture = scene.resources.get(imagePath);
+    material.setImage(texture);
+    renderable = new Renderable(position[0], position[1], width, height, material);
+    layer.addRenderable(renderable);
+  };
+
+  var removeRenderable = function() {
+    layer.removeRenderable(renderable);
+    renderable = null;
+  };
+
+  var onAddedToScene = function(data) {
+    scene = data.scene;
+    layer = scene.getLayer(depth);
+    addRenderable();
+  };
+
+  var onRemovedFromScene = function() {
+    removeRenderable();
+  };
+
+  self.on('addedToScene', onAddedToScene);
+  self.on('removedFromScene', onRemovedFromScene);  
+};
+
+});
+
+define('src/enemies',['require','../libs/layers/scene/entity','./enemy'],function(require) {
+
+var Entity = require('../libs/layers/scene/entity');
+var Enemy = require('./enemy');
+
+  
+return function() {
+  Entity.call(this);
+
+  var self = this
+  ,   scene = null
+  ,   layer = null
+  ,   trackedEnemies = {}
+  ;
+
+  self.id = function() { return "enemies"; }
+
+  self.generateEnemies = function() {
+    removeExistingEnemies();
+    addEnemiesRandomlyToScene();
+  };
+
+  var addEnemiesRandomlyToScene = function() {
+    for(var i = 0 ; i < 300; i++) {
+      var x = Math.random() * 1000;
+      var y = Math.random() * 1000;
+      var enemy = new Enemy('enemy-' + i, 'img/basicenemy.png', x , y , 8.0,  20, 20);
+      trackedEnemies[enemy.id()] = enemy;
+      scene.addEntity(enemy);      
+    }
+  };  
+
+  var removeExistingEnemies = function() {
+    for(var i in trackedEnemies) {
+      scene.removeEntity(trackedEnemies[i]);
+      delete trackedEnemies[i];
+    };
+  };
+
+  var onAddedToScene = function(data) {
+    scene = data.scene;
+    layer = scene.getLayer(8.0);
+    scene.on('enemy-killed', onEnemyKilled);
+  };
+
+  var onRemovedFromScene= function() {
+    removeExistingEnemies();
+  };
+
+  var onEnemyKilled = function(data) {
+    var enemy = data.enemy;
+    delete trackedEnemies[enemy.id()];
+    scene.removeEntity(enemy);
+  };
+   
+  self.on('addedToScene', onAddedToScene);
+  self.on('removedFromScene', onRemovedFromScene);
+};    
+
+});
+
+define('src/world',['require','../libs/layers/scene/entity','./player','./level','./controller','./layerscroller','./storyteller','./collision','./bullets','./enemies'],function(require) {
 
 var Entity = require('../libs/layers/scene/entity');
 var Player = require('./player');
@@ -2413,6 +2591,8 @@ var Scroller = require('./layerscroller');
 var StoryTeller = require('./storyteller');
 var Collision = require('./collision');
 var Bullets = require('./bullets');
+var Enemies = require('./enemies');
+
 
 return function() {
   Entity.call(this);
@@ -2426,6 +2606,7 @@ return function() {
   ,   story = null
   ,   collision = null
   ,   bullets = null
+  ,   enemies = null
   ;
 
   self.id = function() { return 'world'; }
@@ -2447,6 +2628,7 @@ return function() {
     removeStoryTeller();
     removeCollision();
     removeBullets();
+    removeEnemies();
   };
 
   var onLevelLoaded = function() {
@@ -2456,6 +2638,7 @@ return function() {
     addStoryTeller();
     addCollision();
     addBullets();
+    addEnemies();
     self.raise('ready');
   };
   
@@ -2518,6 +2701,16 @@ return function() {
   var removeBullets = function() {
     scene.removeEntity(bullets);
     bullets = null;
+  };
+
+  var addEnemies = function() {
+    enemies = new Enemies();
+    scene.addEntity(enemies);
+  };
+
+  var removeEntities = function() {
+    scene.removeEntity(enemies);
+    enemies = null;
   };
 
   var onAddedToScene = function(data) {

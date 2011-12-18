@@ -218,6 +218,7 @@ return function(name) {
     scene.addEntity(entity);
 
     entity = new RenderEntity("energy_barrier", "img/energybarrier.png", 935, 30, 8.0, 15, 30);
+    entity.setSolidity(true);
     scene.addEntity(entity);
 
     self.raise('loaded');

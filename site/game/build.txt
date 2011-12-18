@@ -38,6 +38,8 @@ src/smashyman.js
 src/storyteller.js
 src/collision.js
 src/bullets.js
+src/enemy.js
+src/enemies.js
 src/world.js
 src/pickupcontroller.js
 src/game.js

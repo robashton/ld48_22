@@ -23,6 +23,7 @@ return function() {
   ,   messageDisplay = null
   ,   currentWaiter = null
   ,   currentHooks = {}
+  ,   player = null
   ;
 
   self.id = function() { return 'storyteller' };
@@ -34,13 +35,19 @@ return function() {
   var onWorldReady = function() {
     addMessageDisplay();
     addSmashyManToScene();
+    player = scene.getEntity('player');
+
+    player.setPosition(800, 30);
+    addEnemiesToScene();
+    removeEntity('energy_barrier');
+    /*
     showMessage("I have been in this room since I can remember", PLAYER_AVATAR );
     showMessage("I am fed, I have somewhere to sleep and it is warm", PLAYER_AVATAR );
     showMessage("There is no exit, this is all I know", PLAYER_AVATAR );
     showMessage("I am... alone");
     onMessagesFinished(function() {
       setTimeout(addRabbitToScene, 2000);
-    });
+    }); */
   };
 
   var rabbit = null;
@@ -223,6 +230,13 @@ return function() {
     removeEntity('energy_barrier');
     scene.removeEntity(wizard);
     wizard = null;
+    addEnemiesToScene();
+  };
+
+  var addEnemiesToScene = function() {
+    scene.withEntity('enemies', function(enemies) {
+      enemies.generateEnemies();
+    });
   };
   
   var moveEntityTo = function(entity, x, y, callback) {
