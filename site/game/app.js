@@ -1016,288 +1016,6 @@ define('libs/layers/render/renderable',[],function() {
 
 
 
-define('src/person',['require','../libs/layers/scene/entity','../libs/layers/render/material','../libs/layers/render/renderable'],function(require) {
-var Entity = require('../libs/layers/scene/entity');
-var Material = require('../libs/layers/render/material');
-var Renderable = require('../libs/layers/render/renderable');
-
-return function(id, depth) {
-  Entity.call(this);
-
-  var self = this,
-      scene = null
-  ,   layer = null
-  ,   renderable = null
-  ,   position = vec3.create([0,0,0])
-  ,   velocity = vec3.create([0,0,0])
-  ,   friction = 0.98
-  ,   gravity = 0.08
-  ,   speed = 1.0
-  ,   maxSpeed = 2.0
-  ,   width = 20
-  ,   height = 20
-  ,   jumpHeight = -4.0
-  ,   issolid = true
-  ,   hasPhysics = true
-  ,   physicsAdjust = vec3.create([0,0,0]);
-  ;
-
-  self.id = function() { return id; }
-
-  self.tick = function() {
-    if(hasPhysics) {
-      applyGravity();
-    }
-    applyFriction();
-    applyVelocity();
-    applyMapBounds();
-    applyPhysics();
-    updateRenderable();
-  };
-
-  self.setPosition = function(x, y) {
-    position[0] = x;
-    position[1] = y;
-  };
-
-  self.setVelocity = function(x, y) {
-    velocity[0] = x;
-    velocity[1] = y;
-  };
-
-  self.setMaxSpeed = function(value) {
-    maxSpeed = value;
-  };
-
-  self.setSpeed = function(value) {
-    speed = value;
-  };
-
-  self.setPhysics = function(value) {
-    hasPhysics = value;
-  };
-
-  self.hasPhysics = function() {
-    return hasPhysics;
-  };
-
-  self.setDimensions = function(newWidth, newHeight) {
-    width = newWidth;
-    height = newHeight;
-    if(renderable) {
-      removeRenderable();
-      addRenderable();
-    };
-  };
-  
-  self.getPosition = function() {
-    return position;
-  };
-
-  self.moveLeft = function() {
-    if(velocity[0] > -maxSpeed)
-      velocity[0] -= speed;
-    self.raise('turnLeft');
-  };
-
-  self.moveRight = function() {
-    if(velocity[0] < maxSpeed)
-      velocity[0] += speed;
-    self.raise('turnRight');
-  };
-
-  self.moveUp = function() {
-    if(velocity[1] === 0)
-      velocity[1] = jumpHeight;
-  };
-
-  self.lookUp = function() {
-    self.raise('turnUp');
-  };
-
-  self.lookDown = function() {
-    self.raise('turnDown');
-  };
-
-  self.bounds = function() {
-    return {
-      x: position[0],
-      y: position[1],
-      width: width,
-      height: height
-    }
-  }
-
-  self.issolid = function() {
-    return issolid;
-  };  
-
-  self.notifyCollide = function(x, y, otherEntity) {
-    if(otherEntity.issolid() && self.issolid()) {
-      if(x)
-        physicsAdjust[0] += x;
-      if(y) {
-        physicsAdjust[1] += y;
-      }
-    }
-  };
-
-  self.setJumpHeight = function(height) {
-    jumpHeight = height;
-  };
-
-  self.setSolidity = function(value) {
-    issolid = value;
-  };
-
-  var applyGravity = function() {
-    velocity[1] += gravity;
-  };
-
-  var applyFriction = function() {
-    velocity[0] *= (friction * 0.7);
-    velocity[1] *= friction;
-
-    if(Math.abs(velocity[0]) < 0.01)
-      velocity[0] = 0;
-    if(Math.abs(velocity[1]) < 0.01)
-      velocity[1] = 0;
-  };
-
-  var applyVelocity = function() {
-    position[0] += velocity[0];
-    position[1] += velocity[1];
-  };
-
-  var updateRenderable = function() {
-    renderable.position(position[0], position[1]);
-  };
-
-  var applyMapBounds = function() {
-    scene.withEntity('current-level', function(level) {
-      level.clip(position, velocity, width, height);
-    });
-  };
-
-  var applyPhysics = function() {
-    if(physicsAdjust[0])
-      position[0] += physicsAdjust[0];
-    if(physicsAdjust[1]) {
-      position[1] += physicsAdjust[1];
-      if(physicsAdjust[1] < 0)
-        velocity[1] = 0;
-    }
-
-    physicsAdjust[0] = 0;
-    physicsAdjust[1] = 0;
-  };
-
-  var onAddedToScene = function(data) {
-    scene = data.scene;
-    layer = scene.getLayer(depth);
-    addRenderable();
-  };
-
-  var onRemovedFromScene = function() {
-    removeRenderable();
-  };
-
-  var addRenderable = function() {
-    var material = new Material(255,255,255);
-    var texture = scene.resources.get('img/player.png');
-    material.setImage(texture);
-    renderable = new Renderable(0,0, width, height, material);
-    layer.addRenderable(renderable);
-  };
-
-  var removeRenderable = function() {
-    layer.removeRenderable(renderable);
-    renderable = null;
-  };
-
-  self.on('removedFromScene', onRemovedFromScene);
-  self.on('addedToScene', onAddedToScene);
-};
-});
-
-define('src/player',['require','../libs/layers/scene/entity','../libs/layers/render/material','./person'],function(require) {
-
-var Entity = require('../libs/layers/scene/entity');
-var Material = require('../libs/layers/render/material');
-var Person = require('./person');
-
-return function(depth) {
-  Person.call(this, "player", depth);
-
-  var self = this
-  ,   hasGun = false
-  ,   gunArmed = false
-  ,   direction = "right"
-  ,   firingRate = 5
-  ,   ticks = 0
-  ;
-
-  self.setMaxSpeed(3.0);
-  self.setSpeed(1.5);
-
-  var oldTick = self.tick;
-  self.tick = function() {
-    oldTick();
-    ticks++;
-  };
-
-  self.notifyHasGun = function() {
-    hasGun = true;
-    self.raise('gun-picked-up');
-  };
-
-  self.armGun = function() {
-    gunArmed = true
-  };
-
-  self.fire = function() {
-    if(!gunArmed || !hasGun) return;
-    if(ticks % firingRate !== 0) return;
-    var bounds = self.bounds();    
-    self.raise('fired', {
-      sender: self.id(),
-      x: bounds.x,
-      y: bounds.y,
-      direction: direction,
-      size: 5
-    });
-  };
-
-  var onAddedToScene = function(data) {
-    scene = data.scene;
-    layer = scene.getLayer(depth);
-  };
-
-  var onEntityTurnedLeft = function() {
-    direction = "left";
-  };  
-
-  var onEntityTurnedRight = function() {
-    direction = "right";
-  };
-
-  var onEntityTurnedUp  =function() {
-   direction = "up";
-  };
-
-  var onEntityTurnedDown  =function() {
-   direction = "down";
-  };
- 
-  
-  self.on('addedToScene', onAddedToScene);
-  self.on('turnLeft', onEntityTurnedLeft);
-  self.on('turnRight', onEntityTurnedRight);
-  self.on('turnUp', onEntityTurnedUp);
-  self.on('turnDown', onEntityTurnedDown);
-};
-});
-
 define('src/renderentity',['require','../libs/layers/scene/entity','../libs/layers/render/material','../libs/layers/render/renderable'],function(require) {
 
 var Entity = require('../libs/layers/scene/entity');
@@ -1629,10 +1347,28 @@ return function(name) {
         foregroundRenderables[i + j * numWidth] = renderable;      
       }
     }
-    loadStaticObjects();        
+    loadStaticObjects(); 
+    self.raise('loaded');       
   };
 
+  self.reset = function() {
+    ensureEntityRemoved('first_door');
+    ensureEntityRemoved('first_lever');
+    ensureEntityRemoved('second_lever');
+    ensureEntityRemoved('third_lever');
+    ensureEntityRemoved('first_wall');
+    ensureEntityRemoved('gun');
+    ensureEntityRemoved('energy_barrier');
+    ensureEntityRemoved('final_barrier');
+    ensureEntityRemoved('portal_to_leave');
+    loadStaticObjects();
+  };
   
+  var ensureEntityRemoved = function(id) {
+    var entity = scene.getEntity(id);
+    if(entity)
+      scene.removeEntity(entity);
+  };
 
   var loadStaticObjects = function() {
 
@@ -1666,7 +1402,6 @@ return function(name) {
     entity = new RenderEntity('portal_to_leave', 'img/portalleave.png',1538, 1178, 8.0, 50, 10);
     scene.addEntity(entity);
 
-    self.raise('loaded');
   };
 
   self.on('addedToScene', onAddedToScene);
@@ -1841,6 +1576,210 @@ return function() {
 
 });
 
+define('src/person',['require','../libs/layers/scene/entity','../libs/layers/render/material','../libs/layers/render/renderable'],function(require) {
+var Entity = require('../libs/layers/scene/entity');
+var Material = require('../libs/layers/render/material');
+var Renderable = require('../libs/layers/render/renderable');
+
+return function(id, depth) {
+  Entity.call(this);
+
+  var self = this,
+      scene = null
+  ,   layer = null
+  ,   renderable = null
+  ,   position = vec3.create([0,0,0])
+  ,   velocity = vec3.create([0,0,0])
+  ,   friction = 0.98
+  ,   gravity = 0.08
+  ,   speed = 1.0
+  ,   maxSpeed = 2.0
+  ,   width = 20
+  ,   height = 20
+  ,   jumpHeight = -4.0
+  ,   issolid = true
+  ,   hasPhysics = true
+  ,   physicsAdjust = vec3.create([0,0,0]);
+  ;
+
+  self.id = function() { return id; }
+
+  self.tick = function() {
+    if(hasPhysics) {
+      applyGravity();
+    }
+    applyFriction();
+    applyVelocity();
+    applyMapBounds();
+    applyPhysics();
+    updateRenderable();
+  };
+
+  self.setPosition = function(x, y) {
+    position[0] = x;
+    position[1] = y;
+  };
+
+  self.setVelocity = function(x, y) {
+    velocity[0] = x;
+    velocity[1] = y;
+  };
+
+  self.setMaxSpeed = function(value) {
+    maxSpeed = value;
+  };
+
+  self.setSpeed = function(value) {
+    speed = value;
+  };
+
+  self.setPhysics = function(value) {
+    hasPhysics = value;
+  };
+
+  self.hasPhysics = function() {
+    return hasPhysics;
+  };
+
+  self.setDimensions = function(newWidth, newHeight) {
+    width = newWidth;
+    height = newHeight;
+    if(renderable) {
+      removeRenderable();
+      addRenderable();
+    };
+  };
+  
+  self.getPosition = function() {
+    return position;
+  };
+
+  self.moveLeft = function() {
+    if(velocity[0] > -maxSpeed)
+      velocity[0] -= speed;
+    self.raise('turnLeft');
+  };
+
+  self.moveRight = function() {
+    if(velocity[0] < maxSpeed)
+      velocity[0] += speed;
+    self.raise('turnRight');
+  };
+
+  self.moveUp = function() {
+    if(velocity[1] === 0)
+      velocity[1] = jumpHeight;
+  };
+
+  self.lookUp = function() {
+    self.raise('turnUp');
+  };
+
+  self.lookDown = function() {
+    self.raise('turnDown');
+  };
+
+  self.bounds = function() {
+    return {
+      x: position[0],
+      y: position[1],
+      width: width,
+      height: height
+    }
+  }
+
+  self.issolid = function() {
+    return issolid;
+  };  
+
+  self.notifyCollide = function(x, y, otherEntity) {
+    if(otherEntity.issolid() && self.issolid()) {
+      if(x)
+        physicsAdjust[0] += x;
+      if(y) {
+        physicsAdjust[1] += y;
+      }
+    }
+  };
+
+  self.setJumpHeight = function(height) {
+    jumpHeight = height;
+  };
+
+  self.setSolidity = function(value) {
+    issolid = value;
+  };
+
+  var applyGravity = function() {
+    velocity[1] += gravity;
+  };
+
+  var applyFriction = function() {
+    velocity[0] *= (friction * 0.7);
+    velocity[1] *= friction;
+
+    if(Math.abs(velocity[0]) < 0.01)
+      velocity[0] = 0;
+    if(Math.abs(velocity[1]) < 0.01)
+      velocity[1] = 0;
+  };
+
+  var applyVelocity = function() {
+    position[0] += velocity[0];
+    position[1] += velocity[1];
+  };
+
+  var updateRenderable = function() {
+    renderable.position(position[0], position[1]);
+  };
+
+  var applyMapBounds = function() {
+    scene.withEntity('current-level', function(level) {
+      level.clip(position, velocity, width, height);
+    });
+  };
+
+  var applyPhysics = function() {
+    if(physicsAdjust[0])
+      position[0] += physicsAdjust[0];
+    if(physicsAdjust[1]) {
+      position[1] += physicsAdjust[1];
+      if(physicsAdjust[1] < 0)
+        velocity[1] = 0;
+    }
+
+    physicsAdjust[0] = 0;
+    physicsAdjust[1] = 0;
+  };
+
+  var onAddedToScene = function(data) {
+    scene = data.scene;
+    layer = scene.getLayer(depth);
+    addRenderable();
+  };
+
+  var onRemovedFromScene = function() {
+    removeRenderable();
+  };
+
+  var addRenderable = function() {
+    var material = new Material(255,255,255);
+    var texture = scene.resources.get('img/player.png');
+    material.setImage(texture);
+    renderable = new Renderable(0,0, width, height, material);
+    layer.addRenderable(renderable);
+  };
+
+  var removeRenderable = function() {
+    layer.removeRenderable(renderable);
+    renderable = null;
+  };
+
+  self.on('removedFromScene', onRemovedFromScene);
+  self.on('addedToScene', onAddedToScene);
+};
+});
+
 define('src/npc',['require','../libs/layers/scene/entity','../libs/layers/render/material','./person'],function(require) {
 
 var Entity = require('../libs/layers/scene/entity');
@@ -1971,6 +1910,8 @@ return function(depth) {
 
   var self = this
   ,   health = 15
+  ,   firingRate = 10
+  ,   ticks = 0
   ;
 
   self.notifyBulletHit = function() {
@@ -1984,12 +1925,27 @@ return function(depth) {
 
   var oldTick = self.tick;
   self.tick = function() {
+    ticks++;
     determineIfShouldShoot();
     oldTick();
   };
 
   var determineIfShouldShoot = function() {
+   scene.withEntity('player', function(player) {
+      if(Math.abs(self.bounds().x - player.bounds().x) < 50)
+        fire();
+   });
+  };
 
+  var fire = function() {
+    if(ticks % firingRate !== 0) return;
+    self.raise('fired', {
+      sender: self.id(),
+      x: self.bounds().x + self.bounds().width / 2.0,
+      y: self.bounds().y + self.bounds().height,
+      direction: "down",
+      size: 20
+      });    
   };
 
   var chooseDestination = function() {
@@ -2010,7 +1966,101 @@ return function(depth) {
 
 });
 
-define('src/storyteller',['require','./messagedisplay','../libs/layers/scene/entity','./rabbit','./renderentity','./smashyman','./npc','./demon'],function(require) {
+define('src/player',['require','../libs/layers/scene/entity','../libs/layers/render/material','./person'],function(require) {
+
+var Entity = require('../libs/layers/scene/entity');
+var Material = require('../libs/layers/render/material');
+var Person = require('./person');
+
+return function(depth) {
+  Person.call(this, "player", depth);
+
+  var self = this
+  ,   hasGun = false
+  ,   gunArmed = false
+  ,   direction = "right"
+  ,   firingRate = 5
+  ,   ticks = 0
+  ,   life = 300
+  ,   maxLife = 300
+  ;
+
+  self.setMaxSpeed(3.0);
+  self.setSpeed(1.5);
+
+  var oldTick = self.tick;
+  self.tick = function() {
+    if(life < maxLife) {
+      life += 1;
+      self.raise('player-life-changed');
+    }
+    oldTick();
+    ticks++;
+  };
+
+  self.notifyBulletHit = function() {
+    life -= 100;
+    self.raise('player-life-changed', {
+      life: life
+    });
+    if(life < 0) {
+      self.raise('player-death');      
+    }
+  };
+
+  self.notifyHasGun = function() {
+    hasGun = true;
+    self.raise('gun-picked-up');
+  };
+
+  self.armGun = function() {
+    gunArmed = true
+  };
+
+  self.fire = function() {
+    if(!gunArmed || !hasGun) return;
+    if(ticks % firingRate !== 0) return;
+    var bounds = self.bounds();    
+    self.raise('fired', {
+      sender: self.id(),
+      x: bounds.x,
+      y: bounds.y,
+      direction: direction,
+      size: 5
+    });
+  };
+
+  var onAddedToScene = function(data) {
+    scene = data.scene;
+    layer = scene.getLayer(depth);
+  };
+
+  var onEntityTurnedLeft = function() {
+    direction = "left";
+  };  
+
+  var onEntityTurnedRight = function() {
+    direction = "right";
+  };
+
+  var onEntityTurnedUp  =function() {
+   direction = "up";
+  };
+
+  var onEntityTurnedDown  =function() {
+   direction = "down";
+  };
+ 
+  
+  self.on('addedToScene', onAddedToScene);
+  self.on('turnLeft', onEntityTurnedLeft);
+  self.on('turnRight', onEntityTurnedRight);
+  self.on('turnUp', onEntityTurnedUp);
+  self.on('turnDown', onEntityTurnedDown);
+};
+});
+
+define('src/storyteller',['require','./messagedisplay','../libs/layers/scene/entity','./rabbit','./renderentity','./smashyman','./npc','./demon','./player'],function(require) {
 
 var MessageDisplay = require('./messagedisplay');
 var Entity = require('../libs/layers/scene/entity');
@@ -2019,6 +2069,7 @@ var RenderEntity = require('./renderentity');
 var SmashyMan = require('./smashyman');
 var Npc = require('./npc');
 var Demon = require('./demon');
+var Player = require('./player');
 
 var PLAYER_AVATAR = "img/playeravatar.png";
 var RABBIT_AVATAR = "img/rabbitavatar.png";
@@ -2037,6 +2088,8 @@ return function() {
   ,   currentWaiter = null
   ,   currentHooks = {}
   ,   player = null
+  ,   playerHasGun = false
+  ,   playerHasArmedGun = false
   ;
 
   self.id = function() { return 'storyteller' };
@@ -2047,22 +2100,34 @@ return function() {
 
   var onWorldReady = function() {
     addMessageDisplay();
-    addSmashyManToScene();
-
-    player = scene.getEntity('player');
+    startGame();
+    
+    playerHasGun = true;
+    playerHasArmedGun = true;
     player.notifyHasGun();
     player.armGun();
     player.setPosition(790, 1139);
     addEnemiesToScene();
-    whenPlayerReaches(scene.getEntity('final_barrier'), spawnWizardAgainToTellPlayerToFightDemon);
+    whenPlayerReaches(scene.getEntity('final_barrier'), tellPlayerToFightDemon);
+  };
+
+  var startGame = function(laughAtPunyHuman) {
+    addSmashyManToScene();
+    addPlayer();
+
+    if(laughAtPunyHuman) {
+      showMessage("HAhahaah, if only it were so easy, back in your cage mortal.", WIZARD_AVATAR );
+    } else { /*
+      showMessage("I have been in this room since I can remember", PLAYER_AVATAR );
+      showMessage("I am fed, I have somewhere to sleep and it is warm", PLAYER_AVATAR );
+      showMessage("There is no exit, this is all I know", PLAYER_AVATAR );
+      showMessage("I am... alone"); */
+    }
 /*
-    showMessage("I have been in this room since I can remember", PLAYER_AVATAR );
-    showMessage("I am fed, I have somewhere to sleep and it is warm", PLAYER_AVATAR );
-    showMessage("There is no exit, this is all I know", PLAYER_AVATAR );
-    showMessage("I am... alone");
     onMessagesFinished(function() {
       setTimeout(addRabbitToScene, 2000);
     });  */
+
   };
 
   var rabbit = null;
@@ -2170,6 +2235,8 @@ return function() {
   };
 
   var onGunPickedUp = function() {
+    if(playerHasGun) return;
+    playerHasGun = true;
     showMessage("Ooh, careful with that - it's a laser mega blaster 9000?", RABBIT_AVATAR);
     showMessage("ME SMASH YOU SHOOT, LETS GO", SMASHY_AVATAR);
     showMessage("Okay, let's get out of here", PLAYER_AVATAR);
@@ -2214,6 +2281,7 @@ return function() {
   var letPlayerDecideWhatherToContinue = function() {
     scene.withEntity('player', function(player) {
       player.armGun();
+      playerHasArmedGun = true;
     });
     rabbit.on('killed', onRabbitKilled);
     smashyMan.on('killed', onSmashyManKilled);
@@ -2257,7 +2325,6 @@ return function() {
   };
 
   var tellPlayerToFightDemon = function() {
-    removeEnemiesFromScene();
     showMessage("Well you're an ambitious one aren't you?! Let's see if you can make it past my old friend here..", WIZARD_AVATAR);
     onMessagesFinished(spawnDemon);
   };
@@ -2292,7 +2359,71 @@ return function() {
   };
 
   var restartAndGoBackToTheBeginningMwaHaHaHaHaHa = function() {
-    console.log('will do');
+   var level = scene.getEntity('current-level');
+   level.reset();
+   reset();
+   startGame(true);
+  };
+
+  var reset = function() {
+    if(wizard) {
+      scene.removeEntity(wizard);
+      wizard = null;    
+    }
+    if(player) {
+      scene.removeEntity(player);
+      player = null;
+    }
+    if(rabbit) {
+      scene.removeEntity(rabbit);
+      rabbit = null;
+    }
+    if(smashyMan) {
+      scene.removeEntity(smashyMan);
+      smashyMan = null;
+    }
+    if(demon) {
+      scene.removeEntity(demon);  
+      demon = null;
+    }
+    removeEntity('first_box');
+    removeEntity('second_box');
+    currentHooks = {};
+  };
+
+  var addPlayer = function() {
+    player = new Player(8.0);
+    player.setPosition(20, 20);
+    scene.addEntity(player);
+    player.on('player-death', onPlayerDied);
+  };
+
+  var onPlayerDied = function() {
+    removePlayer();
+    setTimeout(tellPlayerDeathIsNotTheEnd, 1000);
+  };
+
+  var tellPlayerDeathIsNotTheEnd = function() {
+    showMessage("Hahaaha, I'll not allow *that* to happen mortal", WIZARD_AVATAR);
+    onMessagesFinished(spawnPlayerAtLastCheckpoint);
+  };
+
+  var spawnPlayerAtLastCheckpoint = function() {
+    var enemies = scene.getEntity('enemies');
+    enemies.generateEnemies();
+    addPlayer();
+    
+    if(playerHasGun)
+      player.notifyHasGun();
+    if(playerHasArmedGun) 
+      player.armGun();
+
+    player.setPosition(109, 1128);
+  };
+
+  var removePlayer = function() {
+    scene.removeEntity(player);
+    player = null;
   };
 
   var removeEnemiesFromScene = function() {
@@ -2352,7 +2483,8 @@ return function() {
 
   var removeEntity = function(id) {
     var entity = scene.getEntity(id);
-    scene.removeEntity(entity);
+    if(entity)
+      scene.removeEntity(entity);
   };
 
   var onMessagesFinished = function(callback) {
@@ -2405,15 +2537,6 @@ return function() {
 };
 
 });
-
-
-
-
-
-
-
-
-
 
 define('src/collision',['require','../libs/layers/scene/entity'],function(require) {
 
@@ -2834,10 +2957,9 @@ return function() {
 
 });
 
-define('src/world',['require','../libs/layers/scene/entity','./player','./level','./controller','./layerscroller','./storyteller','./collision','./bullets','./enemies'],function(require) {
+define('src/world',['require','../libs/layers/scene/entity','./level','./controller','./layerscroller','./storyteller','./collision','./bullets','./enemies'],function(require) {
 
 var Entity = require('../libs/layers/scene/entity');
-var Player = require('./player');
 var Level = require('./level');
 var Controller = require('./controller');
 var Scroller = require('./layerscroller');
@@ -2853,7 +2975,6 @@ return function() {
   var self = this
   ,   loadedLevel = null
   ,   scene = null
-  ,   player = null
   ,   controls = null
   ,   scroller = null
   ,   story = null
@@ -2875,7 +2996,6 @@ return function() {
       scene.removeEntity(loadedLevel);
       loadedLevel = null;
     }
-    removePlayer();    
     removeControls();
     removeScroller();
     removeStoryTeller();
@@ -2885,7 +3005,6 @@ return function() {
   };
 
   var onLevelLoaded = function() {
-    addPlayer();
     addControls();
     addScroller();
     addStoryTeller();
@@ -2895,12 +3014,6 @@ return function() {
     self.raise('ready');
   };
   
-  var addPlayer = function() {
-    player = new Player(8.0);
-    player.setPosition(20, 20);
-    scene.addEntity(player);
-  };
-
   var addControls = function() {
     controls = new Controller();
     scene.addEntity(controls);
@@ -2909,11 +3022,6 @@ return function() {
   var removeControls = function() {
     scene.removeEntity(controls);
     controls = null;
-  };
-
-  var removePlayer = function() {
-    scene.removeEntity(player);
-    player = null;
   };
   
   var addScroller = function() {

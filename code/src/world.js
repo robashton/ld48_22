@@ -1,7 +1,6 @@
 define(function(require) {
 
 var Entity = require('../libs/layers/scene/entity');
-var Player = require('./player');
 var Level = require('./level');
 var Controller = require('./controller');
 var Scroller = require('./layerscroller');
@@ -17,7 +16,6 @@ return function() {
   var self = this
   ,   loadedLevel = null
   ,   scene = null
-  ,   player = null
   ,   controls = null
   ,   scroller = null
   ,   story = null
@@ -39,7 +37,6 @@ return function() {
       scene.removeEntity(loadedLevel);
       loadedLevel = null;
     }
-    removePlayer();    
     removeControls();
     removeScroller();
     removeStoryTeller();
@@ -49,7 +46,6 @@ return function() {
   };
 
   var onLevelLoaded = function() {
-    addPlayer();
     addControls();
     addScroller();
     addStoryTeller();
@@ -59,12 +55,6 @@ return function() {
     self.raise('ready');
   };
   
-  var addPlayer = function() {
-    player = new Player(8.0);
-    player.setPosition(20, 20);
-    scene.addEntity(player);
-  };
-
   var addControls = function() {
     controls = new Controller();
     scene.addEntity(controls);
@@ -73,11 +63,6 @@ return function() {
   var removeControls = function() {
     scene.removeEntity(controls);
     controls = null;
-  };
-
-  var removePlayer = function() {
-    scene.removeEntity(player);
-    player = null;
   };
   
   var addScroller = function() {

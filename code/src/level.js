@@ -197,10 +197,28 @@ return function(name) {
         foregroundRenderables[i + j * numWidth] = renderable;      
       }
     }
-    loadStaticObjects();        
+    loadStaticObjects(); 
+    self.raise('loaded');       
   };
 
+  self.reset = function() {
+    ensureEntityRemoved('first_door');
+    ensureEntityRemoved('first_lever');
+    ensureEntityRemoved('second_lever');
+    ensureEntityRemoved('third_lever');
+    ensureEntityRemoved('first_wall');
+    ensureEntityRemoved('gun');
+    ensureEntityRemoved('energy_barrier');
+    ensureEntityRemoved('final_barrier');
+    ensureEntityRemoved('portal_to_leave');
+    loadStaticObjects();
+  };
   
+  var ensureEntityRemoved = function(id) {
+    var entity = scene.getEntity(id);
+    if(entity)
+      scene.removeEntity(entity);
+  };
 
   var loadStaticObjects = function() {
 
@@ -234,7 +252,6 @@ return function(name) {
     entity = new RenderEntity('portal_to_leave', 'img/portalleave.png',1538, 1178, 8.0, 50, 10);
     scene.addEntity(entity);
 
-    self.raise('loaded');
   };
 
   self.on('addedToScene', onAddedToScene);

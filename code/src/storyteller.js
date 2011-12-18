@@ -7,6 +7,7 @@ var RenderEntity = require('./renderentity');
 var SmashyMan = require('./smashyman');
 var Npc = require('./npc');
 var Demon = require('./demon');
+var Player = require('./player');
 
 var PLAYER_AVATAR = "img/playeravatar.png";
 var RABBIT_AVATAR = "img/rabbitavatar.png";
@@ -25,6 +26,8 @@ return function() {
   ,   currentWaiter = null
   ,   currentHooks = {}
   ,   player = null
+  ,   playerHasGun = false
+  ,   playerHasArmedGun = false
   ;
 
   self.id = function() { return 'storyteller' };
@@ -35,22 +38,34 @@ return function() {
 
   var onWorldReady = function() {
     addMessageDisplay();
-    addSmashyManToScene();
-
-    player = scene.getEntity('player');
+    startGame();
+    
+    playerHasGun = true;
+    playerHasArmedGun = true;
     player.notifyHasGun();
     player.armGun();
     player.setPosition(790, 1139);
     addEnemiesToScene();
-    whenPlayerReaches(scene.getEntity('final_barrier'), spawnWizardAgainToTellPlayerToFightDemon);
+    whenPlayerReaches(scene.getEntity('final_barrier'), tellPlayerToFightDemon);
+  };
+
+  var startGame = function(laughAtPunyHuman) {
+    addSmashyManToScene();
+    addPlayer();
+
+    if(laughAtPunyHuman) {
+      showMessage("HAhahaah, if only it were so easy, back in your cage mortal.", WIZARD_AVATAR );
+    } else { /*
+      showMessage("I have been in this room since I can remember", PLAYER_AVATAR );
+      showMessage("I am fed, I have somewhere to sleep and it is warm", PLAYER_AVATAR );
+      showMessage("There is no exit, this is all I know", PLAYER_AVATAR );
+      showMessage("I am... alone"); */
+    }
 /*
-    showMessage("I have been in this room since I can remember", PLAYER_AVATAR );
-    showMessage("I am fed, I have somewhere to sleep and it is warm", PLAYER_AVATAR );
-    showMessage("There is no exit, this is all I know", PLAYER_AVATAR );
-    showMessage("I am... alone");
     onMessagesFinished(function() {
       setTimeout(addRabbitToScene, 2000);
     });  */
+
   };
 
   var rabbit = null;
@@ -158,6 +173,8 @@ return function() {
   };
 
   var onGunPickedUp = function() {
+    if(playerHasGun) return;
+    playerHasGun = true;
     showMessage("Ooh, careful with that - it's a laser mega blaster 9000?", RABBIT_AVATAR);
     showMessage("ME SMASH YOU SHOOT, LETS GO", SMASHY_AVATAR);
     showMessage("Okay, let's get out of here", PLAYER_AVATAR);
@@ -202,6 +219,7 @@ return function() {
   var letPlayerDecideWhatherToContinue = function() {
     scene.withEntity('player', function(player) {
       player.armGun();
+      playerHasArmedGun = true;
     });
     rabbit.on('killed', onRabbitKilled);
     smashyMan.on('killed', onSmashyManKilled);
@@ -245,7 +263,6 @@ return function() {
   };
 
   var tellPlayerToFightDemon = function() {
-    removeEnemiesFromScene();
     showMessage("Well you're an ambitious one aren't you?! Let's see if you can make it past my old friend here..", WIZARD_AVATAR);
     onMessagesFinished(spawnDemon);
   };
@@ -280,7 +297,71 @@ return function() {
   };
 
   var restartAndGoBackToTheBeginningMwaHaHaHaHaHa = function() {
-    console.log('will do');
+   var level = scene.getEntity('current-level');
+   level.reset();
+   reset();
+   startGame(true);
+  };
+
+  var reset = function() {
+    if(wizard) {
+      scene.removeEntity(wizard);
+      wizard = null;    
+    }
+    if(player) {
+      scene.removeEntity(player);
+      player = null;
+    }
+    if(rabbit) {
+      scene.removeEntity(rabbit);
+      rabbit = null;
+    }
+    if(smashyMan) {
+      scene.removeEntity(smashyMan);
+      smashyMan = null;
+    }
+    if(demon) {
+      scene.removeEntity(demon);  
+      demon = null;
+    }
+    removeEntity('first_box');
+    removeEntity('second_box');
+    currentHooks = {};
+  };
+
+  var addPlayer = function() {
+    player = new Player(8.0);
+    player.setPosition(20, 20);
+    scene.addEntity(player);
+    player.on('player-death', onPlayerDied);
+  };
+
+  var onPlayerDied = function() {
+    removePlayer();
+    setTimeout(tellPlayerDeathIsNotTheEnd, 1000);
+  };
+
+  var tellPlayerDeathIsNotTheEnd = function() {
+    showMessage("Hahaaha, I'll not allow *that* to happen mortal", WIZARD_AVATAR);
+    onMessagesFinished(spawnPlayerAtLastCheckpoint);
+  };
+
+  var spawnPlayerAtLastCheckpoint = function() {
+    var enemies = scene.getEntity('enemies');
+    enemies.generateEnemies();
+    addPlayer();
+    
+    if(playerHasGun)
+      player.notifyHasGun();
+    if(playerHasArmedGun) 
+      player.armGun();
+
+    player.setPosition(109, 1128);
+  };
+
+  var removePlayer = function() {
+    scene.removeEntity(player);
+    player = null;
   };
 
   var removeEnemiesFromScene = function() {
@@ -340,7 +421,8 @@ return function() {
 
   var removeEntity = function(id) {
     var entity = scene.getEntity(id);
-    scene.removeEntity(entity);
+    if(entity)
+      scene.removeEntity(entity);
   };
 
   var onMessagesFinished = function(callback) {
@@ -393,12 +475,3 @@ return function() {
 };
 
 });
-
-
-
-
-
-
-
-
-

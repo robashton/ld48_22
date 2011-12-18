@@ -13,6 +13,8 @@ return function(depth) {
   ,   direction = "right"
   ,   firingRate = 5
   ,   ticks = 0
+  ,   life = 300
+  ,   maxLife = 300
   ;
 
   self.setMaxSpeed(3.0);
@@ -20,8 +22,22 @@ return function(depth) {
 
   var oldTick = self.tick;
   self.tick = function() {
+    if(life < maxLife) {
+      life += 1;
+      self.raise('player-life-changed');
+    }
     oldTick();
     ticks++;
+  };
+
+  self.notifyBulletHit = function() {
+    life -= 100;
+    self.raise('player-life-changed', {
+      life: life
+    });
+    if(life < 0) {
+      self.raise('player-death');      
+    }
   };
 
   self.notifyHasGun = function() {

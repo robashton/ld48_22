@@ -7,6 +7,8 @@ return function(depth) {
 
   var self = this
   ,   health = 15
+  ,   firingRate = 10
+  ,   ticks = 0
   ;
 
   self.notifyBulletHit = function() {
@@ -20,12 +22,27 @@ return function(depth) {
 
   var oldTick = self.tick;
   self.tick = function() {
+    ticks++;
     determineIfShouldShoot();
     oldTick();
   };
 
   var determineIfShouldShoot = function() {
+   scene.withEntity('player', function(player) {
+      if(Math.abs(self.bounds().x - player.bounds().x) < 50)
+        fire();
+   });
+  };
 
+  var fire = function() {
+    if(ticks % firingRate !== 0) return;
+    self.raise('fired', {
+      sender: self.id(),
+      x: self.bounds().x + self.bounds().width / 2.0,
+      y: self.bounds().y + self.bounds().height,
+      direction: "down",
+      size: 20
+      });    
   };
 
   var chooseDestination = function() {
