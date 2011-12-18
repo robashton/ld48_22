@@ -8,6 +8,8 @@ var Scroller = require('./layerscroller');
 var StoryTeller = require('./storyteller');
 var Collision = require('./collision');
 var Bullets = require('./bullets');
+var Enemies = require('./enemies');
+
 
 return function() {
   Entity.call(this);
@@ -21,6 +23,7 @@ return function() {
   ,   story = null
   ,   collision = null
   ,   bullets = null
+  ,   enemies = null
   ;
 
   self.id = function() { return 'world'; }
@@ -42,6 +45,7 @@ return function() {
     removeStoryTeller();
     removeCollision();
     removeBullets();
+    removeEnemies();
   };
 
   var onLevelLoaded = function() {
@@ -51,6 +55,7 @@ return function() {
     addStoryTeller();
     addCollision();
     addBullets();
+    addEnemies();
     self.raise('ready');
   };
   
@@ -113,6 +118,16 @@ return function() {
   var removeBullets = function() {
     scene.removeEntity(bullets);
     bullets = null;
+  };
+
+  var addEnemies = function() {
+    enemies = new Enemies();
+    scene.addEntity(enemies);
+  };
+
+  var removeEntities = function() {
+    scene.removeEntity(enemies);
+    enemies = null;
   };
 
   var onAddedToScene = function(data) {

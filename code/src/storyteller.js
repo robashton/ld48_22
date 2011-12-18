@@ -223,6 +223,13 @@ return function() {
     removeEntity('energy_barrier');
     scene.removeEntity(wizard);
     wizard = null;
+    addEnemiesToScene();
+  };
+
+  var addEnemiesToScene = function() {
+    scene.withEntity('enemies', function(enemies) {
+      enemies.generateEnemies();
+    });
   };
   
   var moveEntityTo = function(entity, x, y, callback) {
