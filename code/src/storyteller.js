@@ -219,12 +219,12 @@ return function() {
      onMessagesFinished(takeDownBarrier);
   };
 
-  var takeDownBarrier = function() {
-    
+  var takeDownBarrier = function() {  
+    removeEntity('energy_barrier');
+    scene.removeEntity(wizard);
+    wizard = null;
   };
   
-  
-
   var moveEntityTo = function(entity, x, y, callback) {
     entity.moveTo(x, y);
     whenEntityReachesTarget(entity, callback);

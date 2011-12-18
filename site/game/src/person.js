@@ -137,6 +137,10 @@ return function(id, depth) {
     addRenderable();
   };
 
+  var onRemovedFromScene = function() {
+    layer.removeRenderable(renderable);
+  };
+
   var addRenderable = function() {
     var material = new Material(255,255,255);
     var texture = scene.resources.get('img/player.png');
@@ -145,6 +149,7 @@ return function(id, depth) {
     layer.addRenderable(renderable);
   };
 
+  self.on('removedFromScene', onRemovedFromScene);
   self.on('addedToScene', onAddedToScene);
 };
 });

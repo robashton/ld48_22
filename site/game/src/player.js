@@ -8,10 +8,18 @@ return function(depth) {
   Person.call(this, "player", depth);
 
   var self = this
-  ,   hasGun = true
-  ,   gunArmed = true
+  ,   hasGun = false
+  ,   gunArmed = false
   ,   direction = "right"
+  ,   firingRate = 5
+  ,   ticks = 0
   ;
+
+  var oldTick = self.tick;
+  self.tick = function() {
+    oldTick();
+    ticks++;
+  };
 
   self.notifyHasGun = function() {
     hasGun = true;
@@ -23,6 +31,8 @@ return function(depth) {
   };
 
   self.fire = function() {
+    if(!gunArmed || !hasGun) return;
+    if(ticks % firingRate !== 0) return;
     var bounds = self.bounds();    
     self.raise('fired', {
       sender: self.id(),

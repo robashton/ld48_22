@@ -1155,6 +1155,10 @@ return function(id, depth) {
     addRenderable();
   };
 
+  var onRemovedFromScene = function() {
+    layer.removeRenderable(renderable);
+  };
+
   var addRenderable = function() {
     var material = new Material(255,255,255);
     var texture = scene.resources.get('img/player.png');
@@ -1163,6 +1167,7 @@ return function(id, depth) {
     layer.addRenderable(renderable);
   };
 
+  self.on('removedFromScene', onRemovedFromScene);
   self.on('addedToScene', onAddedToScene);
 };
 });
@@ -1177,10 +1182,18 @@ return function(depth) {
   Person.call(this, "player", depth);
 
   var self = this
-  ,   hasGun = true
-  ,   gunArmed = true
+  ,   hasGun = false
+  ,   gunArmed = false
   ,   direction = "right"
+  ,   firingRate = 5
+  ,   ticks = 0
   ;
+
+  var oldTick = self.tick;
+  self.tick = function() {
+    oldTick();
+    ticks++;
+  };
 
   self.notifyHasGun = function() {
     hasGun = true;
@@ -1192,6 +1205,8 @@ return function(depth) {
   };
 
   self.fire = function() {
+    if(!gunArmed || !hasGun) return;
+    if(ticks % firingRate !== 0) return;
     var bounds = self.bounds();    
     self.raise('fired', {
       sender: self.id(),
@@ -1573,6 +1588,9 @@ return function(name) {
     entity = new Pickup('gun', 'img/gun-pickup.png', 723, 73, 8.0, 16, 16);
     scene.addEntity(entity);
 
+    entity = new RenderEntity("energy_barrier", "img/energybarrier.png", 935, 30, 8.0, 15, 30);
+    scene.addEntity(entity);
+
     self.raise('loaded');
   };
 
@@ -1808,6 +1826,10 @@ return function(depth) {
 
   self.setJumpHeight(-5.0);
   self.setSolidity(true); 
+
+  self.notifyBulletHit = function() {
+    self.raise('killed');
+  };
 };
 });
 
@@ -1821,6 +1843,10 @@ return function(depth) {
 
   self.setJumpHeight(-4.0);
   self.setSolidity(true);
+
+  self.notifyBulletHit = function() {
+    self.raise('killed');
+  };
 };
 
 });
@@ -2046,12 +2072,12 @@ return function() {
      onMessagesFinished(takeDownBarrier);
   };
 
-  var takeDownBarrier = function() {
-    
+  var takeDownBarrier = function() {  
+    removeEntity('energy_barrier');
+    scene.removeEntity(wizard);
+    wizard = null;
   };
   
-  
-
   var moveEntityTo = function(entity, x, y, callback) {
     entity.moveTo(x, y);
     whenEntityReachesTarget(entity, callback);
@@ -2274,7 +2300,7 @@ return function(depth, maxBullets) {
     for(var i = 0 ; i < maxBullets; i++) {
       var bullet = bullets[i];
       if(!bullet.active) continue;
-      context.fillRect(bullet.x, bullet.y, depth, 0, bullet.size, bullet.size, bulletMaterial);
+      context.fillRect(bullet.x * layer.getRenderScaleFactor(), bullet.y * layer.getRenderScaleFactor(), depth, 0, bullet.size, bullet.size, bulletMaterial);
     }
   };
 
@@ -2289,7 +2315,25 @@ return function(depth, maxBullets) {
       bullet.x += bullet.velx;
       bullet.y += bullet.vely;
     
-      // TODO: Collision detection        
+      scene.each(function(entity) {
+        if(!entity.bounds) return;
+        if(entity.id() === bullet.sender) return;
+
+        var bounds = entity.bounds();
+        if(bullet.x > bounds.x + bounds.width) return;
+        if(bullet.y > bounds.y + bounds.height) return;
+        if(bullet.x + bullet.size < bounds.x) return;
+        if(bullet.y + bullet.size < bounds.y) return;
+        
+        bullet.active = false;
+        self.raise('bullet-hit', {
+          x: bullet.x,
+          y: bullet.y        
+        });          
+
+        if(entity.notifyBulletHit) 
+          entity.notifyBulletHit();    
+      });  
     }
   };
 
@@ -2310,16 +2354,16 @@ return function(depth, maxBullets) {
 
       switch(direction) {
         case "left":
-          bullet.velx = -15.0;
+          bullet.velx = -10.0;
           bullet.vely = 0;
           break;
         case "right":
-          bullet.velx = 15.0;
+          bullet.velx = 10.0;
           bullet.vely = 0;
           break;
         case "down":
           bullet.velx = 0;
-          bullet.vely = 15.0;
+          bullet.vely = 10.0;
           break;
         default:
           return;

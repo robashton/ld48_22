@@ -217,6 +217,9 @@ return function(name) {
     entity = new Pickup('gun', 'img/gun-pickup.png', 723, 73, 8.0, 16, 16);
     scene.addEntity(entity);
 
+    entity = new RenderEntity("energy_barrier", "img/energybarrier.png", 935, 30, 8.0, 15, 30);
+    scene.addEntity(entity);
+
     self.raise('loaded');
   };
 

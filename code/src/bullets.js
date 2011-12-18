@@ -27,7 +27,7 @@ return function(depth, maxBullets) {
     for(var i = 0 ; i < maxBullets; i++) {
       var bullet = bullets[i];
       if(!bullet.active) continue;
-      context.fillRect(bullet.x, bullet.y, depth, 0, bullet.size, bullet.size, bulletMaterial);
+      context.fillRect(bullet.x * layer.getRenderScaleFactor(), bullet.y * layer.getRenderScaleFactor(), depth, 0, bullet.size, bullet.size, bulletMaterial);
     }
   };
 
@@ -42,7 +42,25 @@ return function(depth, maxBullets) {
       bullet.x += bullet.velx;
       bullet.y += bullet.vely;
     
-      // TODO: Collision detection        
+      scene.each(function(entity) {
+        if(!entity.bounds) return;
+        if(entity.id() === bullet.sender) return;
+
+        var bounds = entity.bounds();
+        if(bullet.x > bounds.x + bounds.width) return;
+        if(bullet.y > bounds.y + bounds.height) return;
+        if(bullet.x + bullet.size < bounds.x) return;
+        if(bullet.y + bullet.size < bounds.y) return;
+        
+        bullet.active = false;
+        self.raise('bullet-hit', {
+          x: bullet.x,
+          y: bullet.y        
+        });          
+
+        if(entity.notifyBulletHit) 
+          entity.notifyBulletHit();    
+      });  
     }
   };
 
@@ -63,16 +81,16 @@ return function(depth, maxBullets) {
 
       switch(direction) {
         case "left":
-          bullet.velx = -15.0;
+          bullet.velx = -10.0;
           bullet.vely = 0;
           break;
         case "right":
-          bullet.velx = 15.0;
+          bullet.velx = 10.0;
           bullet.vely = 0;
           break;
         case "down":
           bullet.velx = 0;
-          bullet.vely = 15.0;
+          bullet.vely = 10.0;
           break;
         default:
           return;

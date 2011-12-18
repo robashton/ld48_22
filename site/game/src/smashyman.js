@@ -8,6 +8,10 @@ return function(depth) {
 
   self.setJumpHeight(-4.0);
   self.setSolidity(true);
+
+  self.notifyBulletHit = function() {
+    self.raise('killed');
+  };
 };
 
 });
