@@ -20,13 +20,16 @@ return function(id, depth) {
   ,   height = 20
   ,   jumpHeight = -4.0
   ,   issolid = true
+  ,   hasPhysics = true
   ,   physicsAdjust = vec3.create([0,0,0]);
   ;
 
   self.id = function() { return id; }
 
   self.tick = function() {
-    applyGravity();
+    if(hasPhysics) {
+      applyGravity();
+    }
     applyFriction();
     applyVelocity();
     applyMapBounds();
@@ -39,13 +42,35 @@ return function(id, depth) {
     position[1] = y;
   };
 
+  self.setVelocity = function(x, y) {
+    velocity[0] = x;
+    velocity[1] = y;
+  };
+
   self.setMaxSpeed = function(value) {
     maxSpeed = value;
   };
 
   self.setSpeed = function(value) {
     speed = value;
-  }
+  };
+
+  self.setPhysics = function(value) {
+    hasPhysics = value;
+  };
+
+  self.hasPhysics = function() {
+    return hasPhysics;
+  };
+
+  self.setDimensions = function(newWidth, newHeight) {
+    width = newWidth;
+    height = newHeight;
+    if(renderable) {
+      removeRenderable();
+      addRenderable();
+    };
+  };
   
   self.getPosition = function() {
     return position;
@@ -156,7 +181,7 @@ return function(id, depth) {
   };
 
   var onRemovedFromScene = function() {
-    layer.removeRenderable(renderable);
+    removeRenderable();
   };
 
   var addRenderable = function() {
@@ -165,6 +190,11 @@ return function(id, depth) {
     material.setImage(texture);
     renderable = new Renderable(0,0, width, height, material);
     layer.addRenderable(renderable);
+  };
+
+  var removeRenderable = function() {
+    layer.removeRenderable(renderable);
+    renderable = null;
   };
 
   self.on('removedFromScene', onRemovedFromScene);

@@ -1038,13 +1038,16 @@ return function(id, depth) {
   ,   height = 20
   ,   jumpHeight = -4.0
   ,   issolid = true
+  ,   hasPhysics = true
   ,   physicsAdjust = vec3.create([0,0,0]);
   ;
 
   self.id = function() { return id; }
 
   self.tick = function() {
-    applyGravity();
+    if(hasPhysics) {
+      applyGravity();
+    }
     applyFriction();
     applyVelocity();
     applyMapBounds();
@@ -1057,13 +1060,35 @@ return function(id, depth) {
     position[1] = y;
   };
 
+  self.setVelocity = function(x, y) {
+    velocity[0] = x;
+    velocity[1] = y;
+  };
+
   self.setMaxSpeed = function(value) {
     maxSpeed = value;
   };
 
   self.setSpeed = function(value) {
     speed = value;
-  }
+  };
+
+  self.setPhysics = function(value) {
+    hasPhysics = value;
+  };
+
+  self.hasPhysics = function() {
+    return hasPhysics;
+  };
+
+  self.setDimensions = function(newWidth, newHeight) {
+    width = newWidth;
+    height = newHeight;
+    if(renderable) {
+      removeRenderable();
+      addRenderable();
+    };
+  };
   
   self.getPosition = function() {
     return position;
@@ -1174,7 +1199,7 @@ return function(id, depth) {
   };
 
   var onRemovedFromScene = function() {
-    layer.removeRenderable(renderable);
+    removeRenderable();
   };
 
   var addRenderable = function() {
@@ -1183,6 +1208,11 @@ return function(id, depth) {
     material.setImage(texture);
     renderable = new Renderable(0,0, width, height, material);
     layer.addRenderable(renderable);
+  };
+
+  var removeRenderable = function() {
+    layer.removeRenderable(renderable);
+    renderable = null;
   };
 
   self.on('removedFromScene', onRemovedFromScene);
@@ -1602,6 +1632,8 @@ return function(name) {
     loadStaticObjects();        
   };
 
+  
+
   var loadStaticObjects = function() {
 
     var entity = new RenderEntity('first_door', 'img/door.png', 103, 12, 8.0, 15, 30);
@@ -1625,6 +1657,13 @@ return function(name) {
 
     entity = new RenderEntity("energy_barrier", "img/energybarrier.png", 935, 30, 8.0, 15, 30);
     entity.setSolidity(true);
+    scene.addEntity(entity);
+
+    entity = new RenderEntity('final_barrier', 'img/energybarrier.png', 1337, 1138, 8.0, 10, 60);
+    entity.setSolidity(true);
+    scene.addEntity(entity);
+
+    entity = new RenderEntity('portal_to_leave', 'img/portalleave.png',1538, 1178, 8.0, 50, 10);
     scene.addEntity(entity);
 
     self.raise('loaded');
@@ -1816,6 +1855,7 @@ return function(id, depth) {
   ,   desty = 0
   ,   seeking = false
   ,   lastBounds = null
+  ,   speed = 5
   ;
   
   var oldTick = self.tick;
@@ -1826,24 +1866,35 @@ return function(id, depth) {
 
     oldTick();
 
-    if(seeking) {
+    if(seeking)
+      determineIfNeedsToJump(); 
+  };
+
+  var determineIfNeedsToJump = function() {
+    if(self.hasPhysics()) {    
       var newBounds = self.bounds();
 
       if(Math.abs(lastBounds.x - newBounds.x) < 0.5)
         self.moveUp();
     
       lastBounds = newBounds; 
-    }   
+    }
   };
 
   var moveTowardsTarget = function() {
     var bounds = self.bounds();
 
-    if(bounds.x > destx) {
-      self.moveLeft();
-    }
-    else {
-      self.moveRight();  
+    if(self.hasPhysics()) {      
+      if(bounds.x > destx) {
+        self.moveLeft();
+      }
+      else {
+        self.moveRight();  
+      }
+    } else {
+      var difference = vec3.create([destx - bounds.x, desty - bounds.y,0]);
+      vec3.normalize(difference);
+      self.setVelocity(speed * difference[0], speed * difference[1]);
     }
     
     if(distanceFromTarget() < bounds.width) {
@@ -1911,7 +1962,55 @@ return function(depth) {
 
 });
 
-define('src/storyteller',['require','./messagedisplay','../libs/layers/scene/entity','./rabbit','./renderentity','./smashyman','./npc'],function(require) {
+define('src/demon',['require','./npc'],function(require) {
+
+var Npc = require('./npc');
+
+return function(depth) {
+  Npc.call(this, "demon", depth);
+
+  var self = this
+  ,   health = 15
+  ;
+
+  self.notifyBulletHit = function() {
+   health--;
+   self.raise('health-changed', {
+    health: health
+   });
+   if(health === 0)
+    self.raise('killed');
+  };
+
+  var oldTick = self.tick;
+  self.tick = function() {
+    determineIfShouldShoot();
+    oldTick();
+  };
+
+  var determineIfShouldShoot = function() {
+
+  };
+
+  var chooseDestination = function() {
+
+    var x = (Math.random() * 450) + 840;
+    var y = (Math.random() * 200) + 840;
+
+    self.moveTo(x, y);   
+  };
+
+
+  self.setDimensions(64, 64);
+  self.setPhysics(false);
+  self.on('reached-destination', chooseDestination);
+
+  chooseDestination();
+};
+
+});
+
+define('src/storyteller',['require','./messagedisplay','../libs/layers/scene/entity','./rabbit','./renderentity','./smashyman','./npc','./demon'],function(require) {
 
 var MessageDisplay = require('./messagedisplay');
 var Entity = require('../libs/layers/scene/entity');
@@ -1919,6 +2018,7 @@ var Rabbit = require('./rabbit');
 var RenderEntity = require('./renderentity');
 var SmashyMan = require('./smashyman');
 var Npc = require('./npc');
+var Demon = require('./demon');
 
 var PLAYER_AVATAR = "img/playeravatar.png";
 var RABBIT_AVATAR = "img/rabbitavatar.png";
@@ -1949,13 +2049,12 @@ return function() {
     addMessageDisplay();
     addSmashyManToScene();
 
-
     player = scene.getEntity('player');
     player.notifyHasGun();
     player.armGun();
-    player.setPosition(800, 30);
+    player.setPosition(790, 1139);
     addEnemiesToScene();
-    removeEntity('energy_barrier');
+    whenPlayerReaches(scene.getEntity('final_barrier'), spawnWizardAgainToTellPlayerToFightDemon);
 /*
     showMessage("I have been in this room since I can remember", PLAYER_AVATAR );
     showMessage("I am fed, I have somewhere to sleep and it is warm", PLAYER_AVATAR );
@@ -2147,6 +2246,59 @@ return function() {
     scene.removeEntity(wizard);
     wizard = null;
     addEnemiesToScene();
+    whenPlayerReaches(scene.getEntity('final_barrier'), spawnWizardAgainToTellPlayerToFightDemon);
+  };
+
+  var spawnWizardAgainToTellPlayerToFightDemon = function() {
+    wizard = new Npc("wizard", 8.0);
+    wizard.setPosition(1990, 1060);
+    scene.addEntity(wizard);
+    setTimeout(tellPlayerToFightDemon, 1000);
+  };
+
+  var tellPlayerToFightDemon = function() {
+    removeEnemiesFromScene();
+    showMessage("Well you're an ambitious one aren't you?! Let's see if you can make it past my old friend here..", WIZARD_AVATAR);
+    onMessagesFinished(spawnDemon);
+  };
+
+  var demon = null;
+  var spawnDemon = function() {
+    demon = new Demon(8.0);
+    demon.setPosition(1053, 1030);
+    scene.addEntity(demon);
+    demon.on('killed', spawnWizardToCongratulate);
+    scene.removeEntity(wizard);
+    wizard = null;
+  };
+
+  var spawnWizardToCongratulate = function() {
+    scene.removeEntity(demon);
+    demon = null;
+    wizard = new Npc("wizard", 8.0);
+    wizard.setPosition(1990, 1060);
+    scene.addEntity(wizard);
+    setTimeout(congratulatePlayerOnKillingDemon, 1000);
+  };
+
+  var congratulatePlayerOnKillingDemon = function() {
+    showMessage("Very well, you killed your friends, killed my friends, leave me alone and leave", WIZARD_AVATAR);
+    onMessagesFinished(openFinalBarrier);
+  };
+
+  var openFinalBarrier = function() {
+    removeEntity('final_barrier');  
+    whenPlayerReaches(scene.getEntity('portal_to_leave'), restartAndGoBackToTheBeginningMwaHaHaHaHaHa);
+  };
+
+  var restartAndGoBackToTheBeginningMwaHaHaHaHaHa = function() {
+    console.log('will do');
+  };
+
+  var removeEnemiesFromScene = function() {
+    scene.withEntity('enemies', function(enemies) {
+      enemies.removeAllEnemies();
+    });
   };
 
   var addEnemiesToScene = function() {
@@ -2156,6 +2308,10 @@ return function() {
   };
   
   var moveEntityTo = function(entity, x, y, callback) {
+    if(!entity) {
+      console.warn('Move on entity that does not exist');
+      return;
+    }
     entity.moveTo(x, y);
     whenEntityReachesTarget(entity, callback);
   };
@@ -2633,6 +2789,10 @@ return function() {
   self.generateEnemies = function() {
     removeExistingEnemies();
     addEnemiesRandomlyToScene();
+  };
+
+  self.removeAllEnemies = function() {
+    removeExistingEnemies();
   };
 
   var addEnemiesRandomlyToScene = function() {

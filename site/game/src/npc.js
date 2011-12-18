@@ -12,6 +12,7 @@ return function(id, depth) {
   ,   desty = 0
   ,   seeking = false
   ,   lastBounds = null
+  ,   speed = 5
   ;
   
   var oldTick = self.tick;
@@ -22,24 +23,35 @@ return function(id, depth) {
 
     oldTick();
 
-    if(seeking) {
+    if(seeking)
+      determineIfNeedsToJump(); 
+  };
+
+  var determineIfNeedsToJump = function() {
+    if(self.hasPhysics()) {    
       var newBounds = self.bounds();
 
       if(Math.abs(lastBounds.x - newBounds.x) < 0.5)
         self.moveUp();
     
       lastBounds = newBounds; 
-    }   
+    }
   };
 
   var moveTowardsTarget = function() {
     var bounds = self.bounds();
 
-    if(bounds.x > destx) {
-      self.moveLeft();
-    }
-    else {
-      self.moveRight();  
+    if(self.hasPhysics()) {      
+      if(bounds.x > destx) {
+        self.moveLeft();
+      }
+      else {
+        self.moveRight();  
+      }
+    } else {
+      var difference = vec3.create([destx - bounds.x, desty - bounds.y,0]);
+      vec3.normalize(difference);
+      self.setVelocity(speed * difference[0], speed * difference[1]);
     }
     
     if(distanceFromTarget() < bounds.width) {

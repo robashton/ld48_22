@@ -6,6 +6,7 @@ var Rabbit = require('./rabbit');
 var RenderEntity = require('./renderentity');
 var SmashyMan = require('./smashyman');
 var Npc = require('./npc');
+var Demon = require('./demon');
 
 var PLAYER_AVATAR = "img/playeravatar.png";
 var RABBIT_AVATAR = "img/rabbitavatar.png";
@@ -36,13 +37,12 @@ return function() {
     addMessageDisplay();
     addSmashyManToScene();
 
-
     player = scene.getEntity('player');
     player.notifyHasGun();
     player.armGun();
-    player.setPosition(800, 30);
+    player.setPosition(790, 1139);
     addEnemiesToScene();
-    removeEntity('energy_barrier');
+    whenPlayerReaches(scene.getEntity('final_barrier'), spawnWizardAgainToTellPlayerToFightDemon);
 /*
     showMessage("I have been in this room since I can remember", PLAYER_AVATAR );
     showMessage("I am fed, I have somewhere to sleep and it is warm", PLAYER_AVATAR );
@@ -234,6 +234,59 @@ return function() {
     scene.removeEntity(wizard);
     wizard = null;
     addEnemiesToScene();
+    whenPlayerReaches(scene.getEntity('final_barrier'), spawnWizardAgainToTellPlayerToFightDemon);
+  };
+
+  var spawnWizardAgainToTellPlayerToFightDemon = function() {
+    wizard = new Npc("wizard", 8.0);
+    wizard.setPosition(1990, 1060);
+    scene.addEntity(wizard);
+    setTimeout(tellPlayerToFightDemon, 1000);
+  };
+
+  var tellPlayerToFightDemon = function() {
+    removeEnemiesFromScene();
+    showMessage("Well you're an ambitious one aren't you?! Let's see if you can make it past my old friend here..", WIZARD_AVATAR);
+    onMessagesFinished(spawnDemon);
+  };
+
+  var demon = null;
+  var spawnDemon = function() {
+    demon = new Demon(8.0);
+    demon.setPosition(1053, 1030);
+    scene.addEntity(demon);
+    demon.on('killed', spawnWizardToCongratulate);
+    scene.removeEntity(wizard);
+    wizard = null;
+  };
+
+  var spawnWizardToCongratulate = function() {
+    scene.removeEntity(demon);
+    demon = null;
+    wizard = new Npc("wizard", 8.0);
+    wizard.setPosition(1990, 1060);
+    scene.addEntity(wizard);
+    setTimeout(congratulatePlayerOnKillingDemon, 1000);
+  };
+
+  var congratulatePlayerOnKillingDemon = function() {
+    showMessage("Very well, you killed your friends, killed my friends, leave me alone and leave", WIZARD_AVATAR);
+    onMessagesFinished(openFinalBarrier);
+  };
+
+  var openFinalBarrier = function() {
+    removeEntity('final_barrier');  
+    whenPlayerReaches(scene.getEntity('portal_to_leave'), restartAndGoBackToTheBeginningMwaHaHaHaHaHa);
+  };
+
+  var restartAndGoBackToTheBeginningMwaHaHaHaHaHa = function() {
+    console.log('will do');
+  };
+
+  var removeEnemiesFromScene = function() {
+    scene.withEntity('enemies', function(enemies) {
+      enemies.removeAllEnemies();
+    });
   };
 
   var addEnemiesToScene = function() {
@@ -243,6 +296,10 @@ return function() {
   };
   
   var moveEntityTo = function(entity, x, y, callback) {
+    if(!entity) {
+      console.warn('Move on entity that does not exist');
+      return;
+    }
     entity.moveTo(x, y);
     whenEntityReachesTarget(entity, callback);
   };

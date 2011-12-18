@@ -200,6 +200,8 @@ return function(name) {
     loadStaticObjects();        
   };
 
+  
+
   var loadStaticObjects = function() {
 
     var entity = new RenderEntity('first_door', 'img/door.png', 103, 12, 8.0, 15, 30);
@@ -223,6 +225,13 @@ return function(name) {
 
     entity = new RenderEntity("energy_barrier", "img/energybarrier.png", 935, 30, 8.0, 15, 30);
     entity.setSolidity(true);
+    scene.addEntity(entity);
+
+    entity = new RenderEntity('final_barrier', 'img/energybarrier.png', 1337, 1138, 8.0, 10, 60);
+    entity.setSolidity(true);
+    scene.addEntity(entity);
+
+    entity = new RenderEntity('portal_to_leave', 'img/portalleave.png',1538, 1178, 8.0, 50, 10);
     scene.addEntity(entity);
 
     self.raise('loaded');

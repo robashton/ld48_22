@@ -20,6 +20,10 @@ return function() {
     addEnemiesRandomlyToScene();
   };
 
+  self.removeAllEnemies = function() {
+    removeExistingEnemies();
+  };
+
   var addEnemiesRandomlyToScene = function() {
     for(var i = 0 ; i < 300; i++) {
       var x = Math.random() * 1500;

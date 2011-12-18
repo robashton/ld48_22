@@ -35,6 +35,7 @@ src/messagedisplay.js
 src/npc.js
 src/rabbit.js
 src/smashyman.js
+src/demon.js
 src/storyteller.js
 src/collision.js
 src/bullets.js
