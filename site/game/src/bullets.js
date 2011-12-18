@@ -92,6 +92,10 @@ return function(depth, maxBullets) {
           bullet.velx = 0;
           bullet.vely = 10.0;
           break;
+        case "up":
+          bullet.velx = 0;
+          bullet.vely = -10.0;
+          break;
         default:
           return;
       }

@@ -1032,6 +1032,8 @@ return function(id, depth) {
   ,   velocity = vec3.create([0,0,0])
   ,   friction = 0.98
   ,   gravity = 0.08
+  ,   speed = 1.0
+  ,   maxSpeed = 2.0
   ,   width = 20
   ,   height = 20
   ,   jumpHeight = -4.0
@@ -1054,26 +1056,42 @@ return function(id, depth) {
     position[0] = x;
     position[1] = y;
   };
+
+  self.setMaxSpeed = function(value) {
+    maxSpeed = value;
+  };
+
+  self.setSpeed = function(value) {
+    speed = value;
+  }
   
   self.getPosition = function() {
     return position;
   };
 
   self.moveLeft = function() {
-    if(velocity[0] > -2.0)
-      velocity[0] -= 1.0;
+    if(velocity[0] > -maxSpeed)
+      velocity[0] -= speed;
     self.raise('turnLeft');
   };
 
   self.moveRight = function() {
-    if(velocity[0] < 2.0)
-      velocity[0] += 1.0;
+    if(velocity[0] < maxSpeed)
+      velocity[0] += speed;
     self.raise('turnRight');
   };
 
   self.moveUp = function() {
     if(velocity[1] === 0)
       velocity[1] = jumpHeight;
+  };
+
+  self.lookUp = function() {
+    self.raise('turnUp');
+  };
+
+  self.lookDown = function() {
+    self.raise('turnDown');
   };
 
   self.bounds = function() {
@@ -1189,6 +1207,9 @@ return function(depth) {
   ,   ticks = 0
   ;
 
+  self.setMaxSpeed(3.0);
+  self.setSpeed(1.5);
+
   var oldTick = self.tick;
   self.tick = function() {
     oldTick();
@@ -1229,11 +1250,21 @@ return function(depth) {
   var onEntityTurnedRight = function() {
     direction = "right";
   };
-    
+
+  var onEntityTurnedUp  =function() {
+   direction = "up";
+  };
+
+  var onEntityTurnedDown  =function() {
+   direction = "down";
+  };
+ 
   
   self.on('addedToScene', onAddedToScene);
   self.on('turnLeft', onEntityTurnedLeft);
   self.on('turnRight', onEntityTurnedRight);
+  self.on('turnUp', onEntityTurnedUp);
+  self.on('turnDown', onEntityTurnedDown);
 };
 });
 
@@ -1473,10 +1504,14 @@ return function(name) {
   };
 
   var solidAt = function(x,y) {
-    var i = parseInt((x / chunkWidth));
-    var j = parseInt((y / chunkHeight));
+    var i = parseInt(x / chunkWidth);
+    var j = parseInt(y / chunkHeight);
     x = (x % chunkWidth);
     y = (y % chunkHeight);
+
+    if(i < 0 || i >= numWidth || j < 0 || j >= numHeight) {
+     return false;
+    }
     
     return mapData[i + j * numWidth][x + y * chunkWidth] > 0; 
   };
@@ -1613,6 +1648,8 @@ return function() {
   ,   impulseRight = false
   ,   impulseUp = false
   ,   firing = false
+  ,   lookUp = false
+  ,   lookDown = false
   ;
 
   self.id = function() { return 'controller'; }
@@ -1625,6 +1662,10 @@ return function() {
         player.moveRight();
       if(impulseUp)
         player.moveUp();
+      if(lookUp)
+        player.lookUp();
+      if(lookDown)
+        player.lookDown();
       if(firing)
         player.fire();
     });
@@ -1632,36 +1673,54 @@ return function() {
 
   var onKeyDown = function(e) {
     switch(e.keyCode) {
+      case 32:
+        impulseUp = true;
+        break;
       case 37:
         impulseLeft = true;
         break;
       case 38:
-        impulseUp = true;
+        lookUp = true;
         break;
       case 39:
         impulseRight = true;
         break;
-      case 88:
-        firing = true
+      case 40:
+        lookDown = true;
         break;
+      case 88:
+        firing = true;
+        break;
+      default:
+        return;
     }
+    return false;
   };
 
   var onKeyUp = function(e) {
     switch(e.keyCode) {
+      case 32:
+        impulseUp = false;
+        break;
       case 37:
         impulseLeft = false;
         break;
       case 38:
-        impulseUp = false;
+        lookUp = false;
         break;
       case 39:
         impulseRight = false;
         break;
+      case 40:
+        lookDown = false;
+        break;
       case 88:
         firing = false;
         break;
+      default:
+        return;
     }
+    return false;
   };
 
   var onAddedToScene = function(data) {
@@ -1889,19 +1948,22 @@ return function() {
   var onWorldReady = function() {
     addMessageDisplay();
     addSmashyManToScene();
-    player = scene.getEntity('player');
 
+/*
+    player = scene.getEntity('player');
+    player.notifyHasGun();
+    player.armGun();
     player.setPosition(800, 30);
     addEnemiesToScene();
     removeEntity('energy_barrier');
-    /*
+*/
     showMessage("I have been in this room since I can remember", PLAYER_AVATAR );
     showMessage("I am fed, I have somewhere to sleep and it is warm", PLAYER_AVATAR );
     showMessage("There is no exit, this is all I know", PLAYER_AVATAR );
     showMessage("I am... alone");
     onMessagesFinished(function() {
       setTimeout(addRabbitToScene, 2000);
-    }); */
+    }); 
   };
 
   var rabbit = null;
@@ -2380,6 +2442,10 @@ return function(depth, maxBullets) {
           bullet.velx = 0;
           bullet.vely = 10.0;
           break;
+        case "up":
+          bullet.velx = 0;
+          bullet.vely = -10.0;
+          break;
         default:
           return;
       }
@@ -2434,7 +2500,7 @@ return function(id, imagePath, x , y , depth,  width, height) {
   ,   renderable = null
   ,   position = vec3.create([x,y,0])
   ,   velocity = vec3.create([0,0,0])
-  ,   speed = 2
+  ,   speed = 1.5
   ;
 
   self.id = function() { return id; }
@@ -2464,7 +2530,9 @@ return function(id, imagePath, x , y , depth,  width, height) {
   };
 
   self.notifyBulletHit = function() {
-    self.raise('killed');
+    self.raise('enemy-killed', {
+      enemy: self
+    });
   };
 
   var applyVelocity = function() {
@@ -2544,8 +2612,8 @@ return function() {
 
   var addEnemiesRandomlyToScene = function() {
     for(var i = 0 ; i < 300; i++) {
-      var x = Math.random() * 1000;
-      var y = Math.random() * 1000;
+      var x = Math.random() * 1500;
+      var y = (Math.random() * 900) + 300;
       var enemy = new Enemy('enemy-' + i, 'img/basicenemy.png', x , y , 8.0,  20, 20);
       trackedEnemies[enemy.id()] = enemy;
       scene.addEntity(enemy);      

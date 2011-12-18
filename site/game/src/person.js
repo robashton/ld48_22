@@ -14,6 +14,8 @@ return function(id, depth) {
   ,   velocity = vec3.create([0,0,0])
   ,   friction = 0.98
   ,   gravity = 0.08
+  ,   speed = 1.0
+  ,   maxSpeed = 2.0
   ,   width = 20
   ,   height = 20
   ,   jumpHeight = -4.0
@@ -36,26 +38,42 @@ return function(id, depth) {
     position[0] = x;
     position[1] = y;
   };
+
+  self.setMaxSpeed = function(value) {
+    maxSpeed = value;
+  };
+
+  self.setSpeed = function(value) {
+    speed = value;
+  }
   
   self.getPosition = function() {
     return position;
   };
 
   self.moveLeft = function() {
-    if(velocity[0] > -2.0)
-      velocity[0] -= 1.0;
+    if(velocity[0] > -maxSpeed)
+      velocity[0] -= speed;
     self.raise('turnLeft');
   };
 
   self.moveRight = function() {
-    if(velocity[0] < 2.0)
-      velocity[0] += 1.0;
+    if(velocity[0] < maxSpeed)
+      velocity[0] += speed;
     self.raise('turnRight');
   };
 
   self.moveUp = function() {
     if(velocity[1] === 0)
       velocity[1] = jumpHeight;
+  };
+
+  self.lookUp = function() {
+    self.raise('turnUp');
+  };
+
+  self.lookDown = function() {
+    self.raise('turnDown');
   };
 
   self.bounds = function() {

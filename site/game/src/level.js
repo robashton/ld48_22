@@ -102,10 +102,14 @@ return function(name) {
   };
 
   var solidAt = function(x,y) {
-    var i = parseInt((x / chunkWidth));
-    var j = parseInt((y / chunkHeight));
+    var i = parseInt(x / chunkWidth);
+    var j = parseInt(y / chunkHeight);
     x = (x % chunkWidth);
     y = (y % chunkHeight);
+
+    if(i < 0 || i >= numWidth || j < 0 || j >= numHeight) {
+     return false;
+    }
     
     return mapData[i + j * numWidth][x + y * chunkWidth] > 0; 
   };

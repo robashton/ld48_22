@@ -14,7 +14,7 @@ return function(id, imagePath, x , y , depth,  width, height) {
   ,   renderable = null
   ,   position = vec3.create([x,y,0])
   ,   velocity = vec3.create([0,0,0])
-  ,   speed = 2
+  ,   speed = 1.5
   ;
 
   self.id = function() { return id; }
@@ -44,7 +44,9 @@ return function(id, imagePath, x , y , depth,  width, height) {
   };
 
   self.notifyBulletHit = function() {
-    self.raise('killed');
+    self.raise('enemy-killed', {
+      enemy: self
+    });
   };
 
   var applyVelocity = function() {

@@ -15,6 +15,9 @@ return function(depth) {
   ,   ticks = 0
   ;
 
+  self.setMaxSpeed(3.0);
+  self.setSpeed(1.5);
+
   var oldTick = self.tick;
   self.tick = function() {
     oldTick();
@@ -55,10 +58,20 @@ return function(depth) {
   var onEntityTurnedRight = function() {
     direction = "right";
   };
-    
+
+  var onEntityTurnedUp  =function() {
+   direction = "up";
+  };
+
+  var onEntityTurnedDown  =function() {
+   direction = "down";
+  };
+ 
   
   self.on('addedToScene', onAddedToScene);
   self.on('turnLeft', onEntityTurnedLeft);
   self.on('turnRight', onEntityTurnedRight);
+  self.on('turnUp', onEntityTurnedUp);
+  self.on('turnDown', onEntityTurnedDown);
 };
 });

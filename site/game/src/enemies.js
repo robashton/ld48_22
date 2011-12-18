@@ -22,8 +22,8 @@ return function() {
 
   var addEnemiesRandomlyToScene = function() {
     for(var i = 0 ; i < 300; i++) {
-      var x = Math.random() * 1000;
-      var y = Math.random() * 1000;
+      var x = Math.random() * 1500;
+      var y = (Math.random() * 900) + 300;
       var enemy = new Enemy('enemy-' + i, 'img/basicenemy.png', x , y , 8.0,  20, 20);
       trackedEnemies[enemy.id()] = enemy;
       scene.addEntity(enemy);      
